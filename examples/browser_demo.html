@@ -396,13 +396,51 @@
                         <textarea 
                             id="intentInput" 
                             class="intent-input" 
-                            placeholder="Example: Purchase 1 hour of consulting services for 20,000 sats"
+                            placeholder="Example: Purchase 1 hour of consulting services"
                             rows="3"
                         ></textarea>
                     </div>
                     
-                    <button id="findSolver" class="button">
-                        🔍 Find Solver & Get Ready
+                    <button id="requestQuote" class="button">
+                        💬 Request Solver Quote
+                    </button>
+                </div>
+                
+                <!-- Solver Quote -->
+                <div id="quoteSection" class="section hidden">
+                    <div class="intent-section" style="border-left-color: #48bb78;">
+                        <h2>💰 Solver Quote</h2>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0;">
+                            <div style="background: white; padding: 16px; border-radius: 8px;">
+                                <div style="font-size: 12px; color: #718096; margin-bottom: 4px;">YOU PAY (ESCROW)</div>
+                                <div style="font-size: 24px; font-weight: bold; color: #667eea;">20,000 sats</div>
+                                <div style="font-size: 11px; color: #718096; margin-top: 4px;">inc. 500 sat network fee</div>
+                            </div>
+                            
+                            <div style="background: white; padding: 16px; border-radius: 8px;">
+                                <div style="font-size: 12px; color: #718096; margin-bottom: 4px;">YOU RECEIVE</div>
+                                <div style="font-size: 24px; font-weight: bold; color: #48bb78;"><span id="quoteLaneSats">500</span> laneSats</div>
+                                <div style="font-size: 11px; color: #718096; margin-top: 4px;">if no dispute</div>
+                            </div>
+                        </div>
+                        
+                        <div class="status status-info" style="margin: 16px 0;">
+                            <div>
+                                <div style="font-weight: 600; margin-bottom: 8px;">📊 What You Get:</div>
+                                <div>• Service delivered: <span id="quoteService"></span></div>
+                                <div>• <strong><span id="quoteLaneSatsDetail">500</span> laneSats</strong> earned (if you confirm service delivered)</div>
+                                <div>• Estimated delivery: 24 hours</div>
+                            </div>
+                        </div>
+                        
+                        <div class="status status-warning">
+                            ⚠️ You'll pre-sign a burn transaction as insurance. Both parties must agree to release funds.
+                        </div>
+                    </div>
+                    
+                    <button id="acceptQuote" class="button button-secondary">
+                        ✅ Accept Quote & Setup Escrow
                     </button>
                 </div>
                 
@@ -461,8 +499,8 @@
                     
                     <div class="choice-buttons">
                         <div class="choice-btn choice-happy" id="choiceHappy">
-                            <h3>😊 I'm Happy</h3>
-                            <p>Pay solver & complete</p>
+                            <h3>✅ Service Delivered</h3>
+                            <p>Confirm & earn 500 laneSats</p>
                         </div>
                         
                         <div class="choice-btn choice-dispute" id="choiceDispute">
@@ -475,7 +513,7 @@
                 <!-- Payout Result -->
                 <div id="payoutResult" class="section hidden">
                     <div class="status status-success">
-                        ✅ Payout transaction signed! Solver receives 19,500 sats.
+                        ✅ Payout transaction signed! You confirmed service delivered and earned <strong><span id="finalLaneSats">500</span> laneSats</strong>!
                     </div>
                     
                     <div class="tx-display">
@@ -571,8 +609,8 @@
             }
         });
         
-        // Find Solver & Setup
-        document.getElementById('findSolver').addEventListener('click', async () => {
+        // Request Quote
+        document.getElementById('requestQuote').addEventListener('click', async () => {
             const intentText = document.getElementById('intentInput').value.trim();
             
             if (!intentText) {
@@ -581,8 +619,32 @@
             }
             
             state.intentText = intentText;
-            document.getElementById('findSolver').disabled = true;
-            document.getElementById('findSolver').textContent = '⏳ Setting up...';
+            document.getElementById('requestQuote').disabled = true;
+            document.getElementById('requestQuote').textContent = '⏳ Finding solver...';
+            
+            // Simulate solver API call
+            await sleep(1000);
+            
+            // Calculate quote
+            const escrowAmount = 20000;
+            const laneSats = 500;     // User reward for no dispute
+            
+            document.getElementById('quoteService').textContent = intentText;
+            document.getElementById('quoteLaneSats').textContent = laneSats.toLocaleString();
+            document.getElementById('quoteLaneSatsDetail').textContent = laneSats.toLocaleString();
+            
+            document.getElementById('quoteSection').classList.remove('hidden');
+            document.getElementById('quoteSection').scrollIntoView({ behavior: 'smooth' });
+            
+            console.log('✅ Quote received from solver');
+        });
+        
+        // Accept Quote & Setup Escrow
+        document.getElementById('acceptQuote').addEventListener('click', async () => {
+            const intentText = state.intentText;
+            
+            document.getElementById('acceptQuote').disabled = true;
+            document.getElementById('acceptQuote').textContent = '⏳ Setting up escrow...';
             
             try {
                 // Show checklist
@@ -685,8 +747,8 @@
             } catch (err) {
                 alert('Error during setup: ' + err);
                 console.error(err);
-                document.getElementById('findSolver').disabled = false;
-                document.getElementById('findSolver').textContent = '🔍 Find Solver & Get Ready';
+                document.getElementById('acceptQuote').disabled = false;
+                document.getElementById('acceptQuote').textContent = '✅ Accept Quote & Setup Escrow';
             }
         });
         
@@ -713,7 +775,7 @@
             const scriptSig = '00';
             const sequence = 'fdffffff';
             const outputCount = '01';
-            const outputValue = '3c4c000000000000';  // 19,500 sats
+            const outputValue = 'f401000000000000';  // 500 sats (little-endian)
             const outputScript = '160014751e76e8199196d454941c45d1b3a323f1433bd6';
             const witnessCount = '01';
             const witnessLen = '40';
@@ -734,6 +796,10 @@
             
             document.getElementById('payoutTxid').textContent = state.payoutTx.txid;
             document.getElementById('payoutTxHex').textContent = payoutTxHex;
+            
+            // Show laneSats reward (for avoiding dispute/computation)
+            const laneSats = 500;
+            document.getElementById('finalLaneSats').textContent = laneSats.toLocaleString();
             
             // Hide choice, show result
             document.getElementById('choiceSection').classList.add('hidden');
