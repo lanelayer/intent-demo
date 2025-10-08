@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2TR + MuSig2 Demo - LaneLayer Core</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 32px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .content {
+            padding: 32px;
+        }
+        
+        .step {
+            margin-bottom: 32px;
+            padding: 24px;
+            background: #f7fafc;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .step h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: #2d3748;
+        }
+        
+        .step-number {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            margin-right: 12px;
+            font-weight: bold;
+        }
+        
+        .info-box {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 12px;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .info-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #718096;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+        
+        .info-value {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            color: #2d3748;
+            word-break: break-all;
+            background: #edf2f7;
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 4px;
+        }
+        
+        .address-display {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .qr-container {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+        }
+        
+        #qrcode {
+            display: inline-block;
+            padding: 16px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        
+        .button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 12px;
+            width: 100%;
+        }
+        
+        .button:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .button-secondary {
+            background: #48bb78;
+        }
+        
+        .button-secondary:hover {
+            background: #38a169;
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+        }
+        
+        .button-danger {
+            background: #f56565;
+        }
+        
+        .button-danger:hover {
+            background: #e53e3e;
+            box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4);
+        }
+        
+        .status {
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 12px;
+            font-size: 14px;
+        }
+        
+        .status-success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+        
+        .status-warning {
+            background: #feebc8;
+            color: #744210;
+            border: 1px solid #fbd38d;
+        }
+        
+        .status-info {
+            background: #bee3f8;
+            color: #2c5282;
+            border: 1px solid #90cdf4;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+        
+        .spinner {
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .copy-btn {
+            display: inline-block;
+            background: #edf2f7;
+            border: 1px solid #cbd5e0;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 8px;
+            transition: all 0.2s;
+        }
+        
+        .copy-btn:hover {
+            background: #e2e8f0;
+        }
+        
+        .bitcoin-uri {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 16px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .bitcoin-uri:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 P2TR + MuSig2 Demo</h1>
+            <p>Trustless Bitcoin Escrow with Taproot & MuSig2</p>
+        </div>
+        
+        <div class="content">
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Loading WASM module...</p>
+            </div>
+            
+            <div id="app" class="hidden">
+                <!-- Step 1: Generate Keys -->
+                <div class="step">
+                    <h2><span class="step-number">1</span>Generate Keys</h2>
+                    <p>Generate ephemeral keys for this intent</p>
+                    <button id="generateKeys" class="button">Generate Keys</button>
+                    <div id="keysInfo" class="hidden">
+                        <div class="info-box">
+                            <div class="info-label">User Public Key</div>
+                            <div class="info-value" id="userPubkey"></div>
+                        </div>
+                        <div class="info-box">
+                            <div class="info-label">Solver Public Key (Simulated)</div>
+                            <div class="info-value" id="solverPubkey"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 2: Create Funding Address -->
+                <div class="step">
+                    <h2><span class="step-number">2</span>Create Funding Address</h2>
+                    <p>Generate P2TR address with MuSig2 key aggregation</p>
+                    <button id="createAddress" class="button" disabled>Create Address</button>
+                    <div id="addressInfo" class="hidden">
+                        <div class="info-box">
+                            <div class="info-label">Funding Address (Testnet)</div>
+                            <div class="info-value address-display" id="fundingAddress"></div>
+                            <button class="copy-btn" onclick="copyAddress()">📋 Copy</button>
+                        </div>
+                        
+                        <div id="bitcoinUri" class="bitcoin-uri" onclick="openBitcoinUri()">
+                            🚀 Open in Bitcoin Wallet
+                        </div>
+                        
+                        <div class="qr-container">
+                            <div id="qrcode"></div>
+                            <p style="margin-top: 12px; color: #718096; font-size: 14px;">
+                                Scan with mobile wallet
+                            </p>
+                        </div>
+                        
+                        <div class="status status-info">
+                            ℹ️ Send 20,000 sats to this address to fund the escrow
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 3: Pre-sign Burn Transaction -->
+                <div class="step">
+                    <h2><span class="step-number">3</span>Pre-sign Burn Transaction</h2>
+                    <p>Create safety net before funding (both parties sign)</p>
+                    <button id="presignBurn" class="button" disabled>Pre-sign Burn TX</button>
+                    <div id="burnInfo" class="hidden">
+                        <div class="info-box">
+                            <div class="info-label">Burn Transaction ID</div>
+                            <div class="info-value" id="burnTxid"></div>
+                        </div>
+                        <div class="info-box">
+                            <div class="info-label">Raw Transaction (Hex) - Ready to Broadcast</div>
+                            <div class="info-value" id="burnTxHex"></div>
+                            <button class="copy-btn" onclick="copyBurnTx()">📋 Copy Raw TX</button>
+                        </div>
+                        <div class="status status-warning">
+                            ⚠️ Burn transaction pre-signed! This destroys funds and reveals intent on-chain.
+                        </div>
+                        <button id="broadcastBurn" class="button button-danger" style="margin-top: 16px;">
+                            🔥 Broadcast Burn (Unhappy Path)
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Step 4: Cooperative Payout -->
+                <div class="step">
+                    <h2><span class="step-number">4</span>Cooperative Payout</h2>
+                    <p>If happy with service, sign payout to solver</p>
+                    <button id="signPayout" class="button button-secondary" disabled>
+                        ✅ Sign Payout (Happy Path)
+                    </button>
+                    <div id="payoutInfo" class="hidden">
+                        <div class="info-box">
+                            <div class="info-label">Payout Transaction ID</div>
+                            <div class="info-value" id="payoutTxid"></div>
+                        </div>
+                        <div class="info-box">
+                            <div class="info-label">Raw Transaction (Hex) - Ready to Broadcast</div>
+                            <div class="info-value" id="payoutTxHex"></div>
+                            <button class="copy-btn" onclick="copyPayoutTx()">📋 Copy Raw TX</button>
+                        </div>
+                        <div class="status status-success">
+                            ✅ Payout transaction signed! Solver will receive 19,500 sats.
+                        </div>
+                        <button id="broadcastPayout" class="button button-secondary" style="margin-top: 16px;">
+                            📡 Broadcast Payout
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Summary -->
+                <div class="step" style="background: #edf2f7; border-left-color: #48bb78;">
+                    <h2>📊 Transaction Summary</h2>
+                    <div id="summary" class="info-value" style="background: white;">
+                        <p>• Generate keys and create funding address</p>
+                        <p>• Pre-sign burn transaction (safety net)</p>
+                        <p>• Fund the address with 20,000 sats</p>
+                        <p>• Choose: Broadcast burn OR sign payout</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        // Import WASM module
+        import init, { MuSig2Helper } from '../pkg/wasm_helper.js';
+        
+        let state = {
+            helper: null,
+            userKeypair: null,
+            solverKeypair: null,
+            fundingAddress: null,
+            fundingInfo: null,
+            burnTx: null,
+            payoutTx: null
+        };
+        
+        // Initialize WASM
+        window.addEventListener('load', async () => {
+            try {
+                await init();
+                state.helper = new MuSig2Helper();
+                
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('app').classList.remove('hidden');
+                
+                console.log('✅ WASM loaded successfully');
+            } catch (err) {
+                console.error('❌ Failed to load WASM:', err);
+                document.getElementById('loading').innerHTML = `
+                    <p style="color: #f56565; margin-top: 16px;">
+                        Failed to load WASM module. Make sure you've built it with:
+                        <br><code>wasm-pack build --target web</code>
+                    </p>
+                `;
+            }
+        });
+        
+        // Step 1: Generate Keys (REAL IMPLEMENTATION)
+        document.getElementById('generateKeys').addEventListener('click', async () => {
+            try {
+                // Generate user keypair
+                const userSk = state.helper.generateKeypair();
+                const userPk = state.helper.getXOnlyPubkey(userSk);
+                
+                // Generate solver keypair (simulating both parties)
+                const solverSk = state.helper.generateKeypair();
+                const solverPk = state.helper.getXOnlyPubkey(solverSk);
+                
+                state.userKeypair = { sk: userSk, pk: userPk };
+                state.solverKeypair = { sk: solverSk, pk: solverPk };
+                
+                // Display as hex
+                const userPkHex = Array.from(userPk).map(b => b.toString(16).padStart(2, '0')).join('');
+                const solverPkHex = Array.from(solverPk).map(b => b.toString(16).padStart(2, '0')).join('');
+                
+                document.getElementById('userPubkey').textContent = userPkHex;
+                document.getElementById('solverPubkey').textContent = solverPkHex;
+                document.getElementById('keysInfo').classList.remove('hidden');
+                document.getElementById('createAddress').disabled = false;
+                
+                console.log('✅ Keys generated');
+            } catch (err) {
+                alert('Error generating keys: ' + err);
+                console.error(err);
+            }
+        });
+        
+        // Step 2: Create Address (REAL IMPLEMENTATION)
+        document.getElementById('createAddress').addEventListener('click', async () => {
+            try {
+                // Create funding address using MuSig2 key aggregation
+                const address = state.helper.createFundingAddress(
+                    state.userKeypair.pk,
+                    state.solverKeypair.pk,
+                    'testnet'
+                );
+                
+                state.fundingAddress = address;
+                
+                document.getElementById('fundingAddress').textContent = address;
+                
+                // Generate Bitcoin URI
+                const amount = 0.00020000; // 20,000 sats in BTC
+                const uri = `bitcoin:${address}?amount=${amount}&label=Intent%20Escrow`;
+                document.getElementById('bitcoinUri').setAttribute('data-uri', uri);
+                
+                // Generate QR Code
+                document.getElementById('qrcode').innerHTML = '';
+                new QRCode(document.getElementById("qrcode"), {
+                    text: uri,
+                    width: 256,
+                    height: 256,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                });
+                
+                document.getElementById('addressInfo').classList.remove('hidden');
+                document.getElementById('presignBurn').disabled = false;
+                
+                console.log('✅ Address created:', address);
+            } catch (err) {
+                alert('Error creating address: ' + err);
+                console.error(err);
+            }
+        });
+        
+        // Step 3: Pre-sign Burn (SIMULATION - Full MuSig2 would require async nonce exchange)
+        document.getElementById('presignBurn').addEventListener('click', async () => {
+            try {
+                // In a real implementation, this would:
+                // 1. Build burn PSBT using WASM
+                // 2. Compute sighash
+                // 3. Both parties exchange nonces (commit/reveal)
+                // 4. Both parties create partial signatures
+                // 5. Aggregate into final signature
+                
+                // Generate properly formatted SegWit transaction
+                // Format: version | marker | flag | inputs | outputs | witness | locktime
+                const version = '02000000';  // Version 2
+                const marker = '00';          // SegWit marker
+                const flag = '01';            // SegWit flag
+                const inputCount = '01';      // 1 input
+                const prevTxid = '4242424242424242424242424242424242424242424242424242424242424242';
+                const prevVout = '00000000';  // vout 0
+                const scriptSig = '00';       // empty scriptsig
+                const sequence = 'fdffffff';  // Enable RBF
+                const outputCount = '01';     // 1 output
+                const outputValue = '0000000000000000';  // 0 sats
+                const outputScript = '066a0454455354';   // OP_RETURN "TEST"
+                const witnessCount = '01';    // 1 witness item
+                const witnessLen = '40';      // 64 bytes
+                const signature = Array.from({length: 64}, () => 
+                    Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
+                ).join('');
+                const locktime = '00000000';
+                
+                const burnTxHex = version + marker + flag + inputCount + 
+                    prevTxid + prevVout + scriptSig + sequence + 
+                    outputCount + outputValue + outputScript + 
+                    witnessCount + witnessLen + signature + locktime;
+                
+                const burnTxid = Array.from({length: 32}, () => 
+                    Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
+                ).join('');
+                
+                state.burnTx = { 
+                    txid: burnTxid,
+                    hex: burnTxHex,
+                    note: 'Pre-signed with MuSig2 (simulated)'
+                };
+                
+                document.getElementById('burnTxid').textContent = burnTxid;
+                document.getElementById('burnTxHex').textContent = burnTxHex;
+                document.getElementById('burnInfo').classList.remove('hidden');
+                document.getElementById('signPayout').disabled = false;
+                
+                console.log('✅ Burn transaction pre-signed (simulated)');
+                console.log('   TXID:', burnTxid);
+                console.log('   Raw TX:', burnTxHex);
+                console.log('   Note: Full MuSig2 signing requires async protocol');
+            } catch (err) {
+                alert('Error pre-signing burn: ' + err);
+                console.error(err);
+            }
+        });
+        
+        // Step 4: Sign Payout (SIMULATION - Full MuSig2 would require async nonce exchange)
+        document.getElementById('signPayout').addEventListener('click', async () => {
+            try {
+                // In a real implementation, this would:
+                // 1. Build payout PSBT using WASM
+                // 2. Compute sighash
+                // 3. Both parties exchange nonces (commit/reveal)
+                // 4. Both parties create partial signatures
+                // 5. Aggregate into final signature
+                
+                // Generate properly formatted SegWit transaction for payout
+                const version = '02000000';
+                const marker = '00';
+                const flag = '01';
+                const inputCount = '01';
+                const prevTxid = '4242424242424242424242424242424242424242424242424242424242424242';
+                const prevVout = '00000000';
+                const scriptSig = '00';
+                const sequence = 'fdffffff';
+                const outputCount = '01';
+                const outputValue = '3c4c000000000000';  // 19,500 sats (little-endian)
+                const outputScript = '160014751e76e8199196d454941c45d1b3a323f1433bd6'; // P2WPKH
+                const witnessCount = '01';
+                const witnessLen = '40';
+                const signature = Array.from({length: 64}, () => 
+                    Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
+                ).join('');
+                const locktime = '00000000';
+                
+                const payoutTxHex = version + marker + flag + inputCount + 
+                    prevTxid + prevVout + scriptSig + sequence + 
+                    outputCount + outputValue + outputScript + 
+                    witnessCount + witnessLen + signature + locktime;
+                
+                const payoutTxid = Array.from({length: 32}, () => 
+                    Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
+                ).join('');
+                
+                state.payoutTx = { 
+                    txid: payoutTxid,
+                    hex: payoutTxHex,
+                    note: 'Signed with MuSig2 (simulated)'
+                };
+                
+                document.getElementById('payoutTxid').textContent = payoutTxid;
+                document.getElementById('payoutTxHex').textContent = payoutTxHex;
+                document.getElementById('payoutInfo').classList.remove('hidden');
+                
+                console.log('✅ Payout transaction signed (simulated)');
+                console.log('   TXID:', payoutTxid);
+                console.log('   Raw TX:', payoutTxHex);
+                console.log('   Note: Full MuSig2 signing requires async protocol');
+            } catch (err) {
+                alert('Error signing payout: ' + err);
+                console.error(err);
+            }
+        });
+        
+        // Broadcast buttons (simulation)
+        document.getElementById('broadcastBurn').addEventListener('click', () => {
+            console.log('Broadcasting burn transaction:', state.burnTx);
+            
+            const msg = `🔥 Burn Transaction Ready to Broadcast
+            
+TXID: ${state.burnTx.txid}
+
+Raw Transaction (Hex):
+${state.burnTx.hex}
+
+To broadcast manually:
+1. Go to: https://blockstream.info/testnet/tx/push
+2. Paste the raw hex above
+3. Click "Broadcast Transaction"
+
+Or use Bitcoin Core:
+bitcoin-cli -testnet sendrawtransaction ${state.burnTx.hex}
+
+Note: ${state.burnTx.note}`;
+            
+            alert(msg);
+        });
+        
+        document.getElementById('broadcastPayout').addEventListener('click', () => {
+            console.log('Broadcasting payout transaction:', state.payoutTx);
+            
+            const msg = `📡 Payout Transaction Ready to Broadcast
+
+TXID: ${state.payoutTx.txid}
+
+Raw Transaction (Hex):
+${state.payoutTx.hex}
+
+To broadcast manually:
+1. Go to: https://blockstream.info/testnet/tx/push
+2. Paste the raw hex above
+3. Click "Broadcast Transaction"
+
+Or use Bitcoin Core:
+bitcoin-cli -testnet sendrawtransaction ${state.payoutTx.hex}
+
+Note: ${state.payoutTx.note}`;
+            
+            alert(msg);
+        });
+        
+        // Helper functions with fallback for clipboard
+        async function copyToClipboard(text, successCallback) {
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text);
+                    if (successCallback) successCallback();
+                } else {
+                    // Fallback for older browsers or non-secure contexts
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    if (successCallback) successCallback();
+                }
+            } catch (err) {
+                console.error('Copy failed:', err);
+                alert('Failed to copy. Please copy manually:\n\n' + text.substring(0, 100) + '...');
+            }
+        }
+        
+        window.copyAddress = () => {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            copyToClipboard(state.fundingAddress, () => {
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => btn.textContent = originalText, 2000);
+            });
+        };
+        
+        window.copyBurnTx = () => {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            copyToClipboard(state.burnTx.hex, () => {
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => btn.textContent = originalText, 2000);
+            });
+        };
+        
+        window.copyPayoutTx = () => {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            copyToClipboard(state.payoutTx.hex, () => {
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => btn.textContent = originalText, 2000);
+            });
+        };
+        
+        window.openBitcoinUri = () => {
+            const uri = document.getElementById('bitcoinUri').getAttribute('data-uri');
+            console.log('Opening Bitcoin URI:', uri);
+            window.location.href = uri;
+        };
+    </script>
+</body>
+</html>

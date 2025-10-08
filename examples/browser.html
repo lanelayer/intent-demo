@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>P2TR + MuSig2 Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #f7931a;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+        button {
+            background: #f7931a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #e88810;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .output {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .label {
+            font-weight: bold;
+            color: #666;
+            margin-top: 10px;
+        }
+        .value {
+            background: #f0f0f0;
+            padding: 8px;
+            border-radius: 3px;
+            margin: 5px 0;
+            font-family: monospace;
+            font-size: 11px;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 P2TR + MuSig2 Demo</h1>
+        
+        <div class="section">
+            <h2>Step 1: Initialize</h2>
+            <button id="init" onclick="initialize()">Initialize WASM</button>
+            <div id="init-status"></div>
+        </div>
+
+        <div class="section">
+            <h2>Step 2: Generate Keys</h2>
+            <button id="gen-keys" onclick="generateKeys()" disabled>Generate Keys</button>
+            <div id="keys-output"></div>
+        </div>
+
+        <div class="section">
+            <h2>Step 3: Create Funding Address</h2>
+            <label>
+                <input type="checkbox" id="use-intent"> Include Intent Commitment
+            </label>
+            <br>
+            <button id="create-addr" onclick="createAddress()" disabled>Create Address</button>
+            <div id="address-output"></div>
+        </div>
+
+        <div class="section">
+            <h2>Step 4: Create Transactions</h2>
+            <button id="create-burn" onclick="createBurnTx()" disabled>Create Burn PSBT</button>
+            <button id="create-payout" onclick="createPayoutTx()" disabled>Create Payout PSBT</button>
+            <div id="tx-output"></div>
+        </div>
+
+        <div class="section">
+            <h2>Console Output</h2>
+            <div class="output" id="console"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import the WASM module (adjust path based on your build)
+        import init, { P2TRMusig2 } from './pkg/wasm_helper.js';
+
+        let helper;
+        let userSecret, userPubkey, solverSecret, solverPubkey;
+        let fundingInfo;
+
+        function log(message, type = 'info') {
+            const console = document.getElementById('console');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+            console.innerHTML += `<span class="${color}">[${timestamp}] ${message}</span>\n`;
+            console.scrollTop = console.scrollHeight;
+        }
+
+        function showValue(label, value) {
+            return `<div class="label">${label}:</div><div class="value">${value}</div>`;
+        }
+
+        window.initialize = async function() {
+            try {
+                log('Initializing WASM module...');
+                await init();
+                helper = new P2TRMusig2();
+                log('✓ WASM initialized successfully', 'success');
+                document.getElementById('init-status').innerHTML = 
+                    '<span class="success">✓ Ready</span>';
+                document.getElementById('gen-keys').disabled = false;
+            } catch (e) {
+                log(`✗ Initialization failed: ${e}`, 'error');
+                document.getElementById('init-status').innerHTML = 
+                    `<span class="error">✗ ${e}</span>`;
+            }
+        }
+
+        window.generateKeys = function() {
+            try {
+                log('Generating keys for user and solver...');
+                
+                // User keys
+                userSecret = helper.generateKeypair();
+                userPubkey = helper.getXOnlyPubkey(userSecret);
+                
+                // Solver keys (in real app, this would come from server)
+                solverSecret = helper.generateKeypair();
+                solverPubkey = helper.getXOnlyPubkey(solverSecret);
+                
+                const output = showValue('User Pubkey', toHex(userPubkey)) +
+                              showValue('Solver Pubkey', toHex(solverPubkey));
+                
+                document.getElementById('keys-output').innerHTML = output;
+                log('✓ Keys generated', 'success');
+                document.getElementById('create-addr').disabled = false;
+            } catch (e) {
+                log(`✗ Key generation failed: ${e}`, 'error');
+            }
+        }
+
+        window.createAddress = function() {
+            try {
+                const useIntent = document.getElementById('use-intent').checked;
+                let intentCommit = null;
+                
+                if (useIntent) {
+                    log('Computing intent commitment...');
+                    // SHA256 of some intent data
+                    const intentData = new TextEncoder().encode('SOLVE:ABC123|PARAMS:XYZ');
+                    intentCommit = crypto.subtle.digestSync('SHA-256', intentData);
+                }
+                
+                log('Creating funding address...');
+                fundingInfo = helper.createFundingAddress(
+                    userPubkey,
+                    solverPubkey,
+                    intentCommit,
+                    'testnet'
+                );
+                
+                let output = showValue('Address', fundingInfo.address) +
+                            showValue('Aggregated Pubkey', fundingInfo.agg_pubkey) +
+                            showValue('Tweaked Pubkey', fundingInfo.tweaked_pubkey);
+                
+                if (intentCommit) {
+                    output += showValue('Intent Commitment', toHex(new Uint8Array(intentCommit)));
+                }
+                
+                document.getElementById('address-output').innerHTML = output;
+                log('✓ Funding address created', 'success');
+                document.getElementById('create-burn').disabled = false;
+                document.getElementById('create-payout').disabled = false;
+            } catch (e) {
+                log(`✗ Address creation failed: ${e}`, 'error');
+            }
+        }
+
+        window.createBurnTx = function() {
+            try {
+                log('Creating burn transaction...');
+                
+                // Dummy funding tx (in real app, this would be actual UTXO)
+                const fundingTxid = '42'.repeat(32);
+                const fundingAmount = 50000;
+                
+                const opreturnData = new TextEncoder().encode('INTENT:' + 'ABCD'.repeat(8));
+                
+                const burnPsbt = helper.createBurnPsbt(
+                    fundingTxid,
+                    0,
+                    fundingAmount,
+                    opreturnData
+                );
+                
+                const output = showValue('Burn PSBT (base64)', burnPsbt.substring(0, 100) + '...');
+                document.getElementById('tx-output').innerHTML = output;
+                log('✓ Burn PSBT created (SIGHASH_ALL|ANYONECANPAY)', 'success');
+            } catch (e) {
+                log(`✗ Burn tx creation failed: ${e}`, 'error');
+            }
+        }
+
+        window.createPayoutTx = function() {
+            try {
+                log('Creating payout transaction...');
+                
+                const fundingTxid = '42'.repeat(32);
+                const fundingAmount = 50000;
+                const payoutAddr = 'tb1q6nkpv2j8y5p5q3h5qgznmg5g8q7w8k6x7v8y9z';
+                const payoutAmount = 48000;
+                
+                const payoutPsbt = helper.createPayoutPsbt(
+                    fundingTxid,
+                    0,
+                    fundingAmount,
+                    payoutAddr,
+                    payoutAmount
+                );
+                
+                const output = showValue('Payout PSBT (base64)', payoutPsbt.substring(0, 100) + '...');
+                document.getElementById('tx-output').innerHTML += output;
+                log('✓ Payout PSBT created (SIGHASH_ALL)', 'success');
+            } catch (e) {
+                log(`✗ Payout tx creation failed: ${e}`, 'error');
+            }
+        }
+
+        function toHex(bytes) {
+            return Array.from(bytes)
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+        }
+
+        // Auto-initialize on page load
+        log('Page loaded. Click "Initialize WASM" to begin.');
+    </script>
+</body>
+</html>
+
+
+

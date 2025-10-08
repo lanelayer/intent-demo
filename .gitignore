@@ -1,0 +1,22 @@
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# WASM build output
+/pkg/
+wasm-pack.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+*.profraw
