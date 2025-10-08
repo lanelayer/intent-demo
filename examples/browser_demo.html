@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>P2TR + MuSig2 Demo - LaneLayer Core</title>
+    <title>P2TR + MuSig2 Escrow - LaneLayer Core</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
         * {
@@ -20,7 +20,7 @@
         }
         
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
             background: white;
             border-radius: 16px;
@@ -49,7 +49,7 @@
             padding: 32px;
         }
         
-        .step {
+        .intent-section {
             margin-bottom: 32px;
             padding: 24px;
             background: #f7fafc;
@@ -57,72 +57,25 @@
             border-left: 4px solid #667eea;
         }
         
-        .step h2 {
+        .intent-section h2 {
             font-size: 20px;
             margin-bottom: 16px;
             color: #2d3748;
         }
         
-        .step-number {
-            display: inline-block;
-            width: 32px;
-            height: 32px;
-            background: #667eea;
-            color: white;
-            border-radius: 50%;
-            text-align: center;
-            line-height: 32px;
-            margin-right: 12px;
-            font-weight: bold;
-        }
-        
-        .info-box {
-            background: white;
-            padding: 16px;
-            border-radius: 8px;
-            margin-top: 12px;
-            border: 2px solid #e2e8f0;
-        }
-        
-        .info-label {
-            font-size: 12px;
-            text-transform: uppercase;
-            color: #718096;
-            margin-bottom: 4px;
-            font-weight: 600;
-        }
-        
-        .info-value {
-            font-family: 'Monaco', 'Courier New', monospace;
-            font-size: 14px;
-            color: #2d3748;
-            word-break: break-all;
-            background: #edf2f7;
-            padding: 8px;
-            border-radius: 4px;
-            margin-top: 4px;
-        }
-        
-        .address-display {
-            font-size: 18px;
-            font-weight: bold;
-            color: #667eea;
-        }
-        
-        .qr-container {
-            text-align: center;
-            margin: 20px 0;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-        }
-        
-        #qrcode {
-            display: inline-block;
-            padding: 16px;
-            background: white;
+        .intent-input {
+            width: 100%;
+            padding: 12px;
             border: 2px solid #e2e8f0;
             border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        
+        .intent-input:focus {
+            outline: none;
+            border-color: #667eea;
         }
         
         .button {
@@ -135,11 +88,11 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
-            margin-top: 12px;
             width: 100%;
+            margin-top: 12px;
         }
         
-        .button:hover {
+        .button:hover:not(:disabled) {
             background: #5568d3;
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
@@ -155,7 +108,7 @@
             background: #48bb78;
         }
         
-        .button-secondary:hover {
+        .button-secondary:hover:not(:disabled) {
             background: #38a169;
             box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
         }
@@ -164,34 +117,189 @@
             background: #f56565;
         }
         
-        .button-danger:hover {
+        .button-danger:hover:not(:disabled) {
             background: #e53e3e;
             box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4);
         }
         
-        .status {
+        .checklist {
+            margin: 20px 0;
+        }
+        
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+        
+        .checklist-item.completed {
+            border-color: #48bb78;
+            background: #f0fff4;
+        }
+        
+        .checkmark {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid #cbd5e0;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .checklist-item.completed .checkmark {
+            background: #48bb78;
+            border-color: #48bb78;
+            color: white;
+        }
+        
+        .checklist-text {
+            flex: 1;
+            font-size: 15px;
+            color: #2d3748;
+        }
+        
+        .checklist-item.completed .checklist-text {
+            color: #22543d;
+        }
+        
+        .address-box {
+            margin: 24px 0;
+            padding: 24px;
+            background: white;
+            border-radius: 12px;
+            border: 3px solid #667eea;
+            text-align: center;
+        }
+        
+        .address-label {
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        
+        .address-value {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 18px;
+            color: #667eea;
+            font-weight: bold;
+            word-break: break-all;
+            margin-bottom: 12px;
+        }
+        
+        .qr-container {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 8px;
+        }
+        
+        #qrcode {
+            display: inline-block;
+            padding: 16px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        
+        .bitcoin-uri {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 16px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .bitcoin-uri:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
+        }
+        
+        .tx-display {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .tx-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #718096;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .tx-value {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            color: #2d3748;
+            word-break: break-all;
+            background: #edf2f7;
             padding: 12px;
             border-radius: 6px;
-            margin-top: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .copy-btn {
+            background: #edf2f7;
+            border: 1px solid #cbd5e0;
+            padding: 8px 16px;
+            border-radius: 6px;
             font-size: 14px;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: all 0.2s;
+            display: inline-block;
+        }
+        
+        .copy-btn:hover {
+            background: #e2e8f0;
+        }
+        
+        .status {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         
         .status-success {
             background: #c6f6d5;
             color: #22543d;
-            border: 1px solid #9ae6b4;
+            border: 2px solid #9ae6b4;
         }
         
         .status-warning {
             background: #feebc8;
             color: #744210;
-            border: 1px solid #fbd38d;
+            border: 2px solid #fbd38d;
         }
         
         .status-info {
             background: #bee3f8;
             color: #2c5282;
-            border: 1px solid #90cdf4;
+            border: 2px solid #90cdf4;
         }
         
         .hidden {
@@ -219,46 +327,59 @@
             100% { transform: rotate(360deg); }
         }
         
-        .copy-btn {
-            display: inline-block;
-            background: #edf2f7;
-            border: 1px solid #cbd5e0;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 12px;
+        .section {
+            margin-bottom: 24px;
+        }
+        
+        .choice-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 24px;
+        }
+        
+        .choice-btn {
+            padding: 24px;
+            border-radius: 12px;
+            border: 3px solid;
             cursor: pointer;
-            margin-left: 8px;
             transition: all 0.2s;
-        }
-        
-        .copy-btn:hover {
-            background: #e2e8f0;
-        }
-        
-        .bitcoin-uri {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            padding: 16px;
-            border-radius: 8px;
             text-align: center;
-            font-size: 16px;
-            font-weight: 600;
-            margin: 16px 0;
-            cursor: pointer;
-            transition: all 0.2s;
         }
         
-        .bitcoin-uri:hover {
-            transform: scale(1.02);
-            box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
+        .choice-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+        
+        .choice-happy {
+            background: #f0fff4;
+            border-color: #48bb78;
+            color: #22543d;
+        }
+        
+        .choice-dispute {
+            background: #fff5f5;
+            border-color: #f56565;
+            color: #742a2a;
+        }
+        
+        .choice-btn h3 {
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+        
+        .choice-btn p {
+            font-size: 14px;
+            opacity: 0.8;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔐 P2TR + MuSig2 Demo</h1>
-            <p>Trustless Bitcoin Escrow with Taproot & MuSig2</p>
+            <h1>🔐 Bitcoin Trustless Escrow</h1>
+            <p>P2TR + MuSig2 • LaneLayer Core</p>
         </div>
         
         <div class="content">
@@ -268,38 +389,44 @@
             </div>
             
             <div id="app" class="hidden">
-                <!-- Step 1: Generate Keys -->
-                <div class="step">
-                    <h2><span class="step-number">1</span>Generate Keys</h2>
-                    <p>Generate ephemeral keys for this intent</p>
-                    <button id="generateKeys" class="button">Generate Keys</button>
-                    <div id="keysInfo" class="hidden">
-                        <div class="info-box">
-                            <div class="info-label">User Public Key</div>
-                            <div class="info-value" id="userPubkey"></div>
+                <!-- Intent Input -->
+                <div class="section">
+                    <div class="intent-section">
+                        <h2>📝 What's Your Intent?</h2>
+                        <textarea 
+                            id="intentInput" 
+                            class="intent-input" 
+                            placeholder="Example: Purchase 1 hour of consulting services for 20,000 sats"
+                            rows="3"
+                        ></textarea>
+                    </div>
+                    
+                    <button id="findSolver" class="button">
+                        🔍 Find Solver & Get Ready
+                    </button>
+                </div>
+                
+                <!-- Setup Checklist -->
+                <div id="setupChecklist" class="section hidden">
+                    <h2 style="margin-bottom: 16px; color: #2d3748;">⚙️ Setup Progress</h2>
+                    <div class="checklist">
+                        <div class="checklist-item" id="check-keys">
+                            <div class="checkmark"></div>
+                            <div class="checklist-text">Generated ephemeral keys (user & solver)</div>
                         </div>
-                        <div class="info-box">
-                            <div class="info-label">Solver Public Key (Simulated)</div>
-                            <div class="info-value" id="solverPubkey"></div>
+                        <div class="checklist-item" id="check-burn">
+                            <div class="checkmark"></div>
+                            <div class="checklist-text">Pre-signed burn transaction (dispute safety net)</div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Step 2: Create Funding Address -->
-                <div class="step">
-                    <h2><span class="step-number">2</span>Create Funding Address</h2>
-                    <p>Generate P2TR address with MuSig2 key aggregation</p>
-                    <button id="createAddress" class="button" disabled>Create Address</button>
-                    <div id="addressInfo" class="hidden">
-                        <div class="info-box">
-                            <div class="info-label">Funding Address (Testnet)</div>
-                            <div class="info-value address-display" id="fundingAddress"></div>
-                            <button class="copy-btn" onclick="copyAddress()">📋 Copy</button>
-                        </div>
-                        
-                        <div id="bitcoinUri" class="bitcoin-uri" onclick="openBitcoinUri()">
-                            🚀 Open in Bitcoin Wallet
-                        </div>
+                <!-- Funding Section -->
+                <div id="fundingSection" class="section hidden">
+                    <div class="address-box">
+                        <div class="address-label">Send Bitcoin to This Address</div>
+                        <div class="address-value" id="fundingAddress"></div>
+                        <button class="copy-btn" onclick="copyAddress()">📋 Copy Address</button>
                         
                         <div class="qr-container">
                             <div id="qrcode"></div>
@@ -308,72 +435,101 @@
                             </p>
                         </div>
                         
+                        <div id="bitcoinUri" class="bitcoin-uri" onclick="openBitcoinUri()">
+                            🚀 Open in Bitcoin Wallet
+                        </div>
+                        
                         <div class="status status-info">
-                            ℹ️ Send 20,000 sats to this address to fund the escrow
+                            ℹ️ Send exactly <strong>20,000 sats</strong> to fund this escrow
                         </div>
                     </div>
-                </div>
-                
-                <!-- Step 3: Pre-sign Burn Transaction -->
-                <div class="step">
-                    <h2><span class="step-number">3</span>Pre-sign Burn Transaction</h2>
-                    <p>Create safety net before funding (both parties sign)</p>
-                    <button id="presignBurn" class="button" disabled>Pre-sign Burn TX</button>
-                    <div id="burnInfo" class="hidden">
-                        <div class="info-box">
-                            <div class="info-label">Burn Transaction ID</div>
-                            <div class="info-value" id="burnTxid"></div>
-                        </div>
-                        <div class="info-box">
-                            <div class="info-label">Raw Transaction (Hex) - Ready to Broadcast</div>
-                            <div class="info-value" id="burnTxHex"></div>
-                            <button class="copy-btn" onclick="copyBurnTx()">📋 Copy Raw TX</button>
-                        </div>
-                        <div class="status status-warning">
-                            ⚠️ Burn transaction pre-signed! This destroys funds and reveals intent on-chain.
-                        </div>
-                        <button id="broadcastBurn" class="button button-danger" style="margin-top: 16px;">
-                            🔥 Broadcast Burn (Unhappy Path)
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Step 4: Cooperative Payout -->
-                <div class="step">
-                    <h2><span class="step-number">4</span>Cooperative Payout</h2>
-                    <p>If happy with service, sign payout to solver</p>
-                    <button id="signPayout" class="button button-secondary" disabled>
-                        ✅ Sign Payout (Happy Path)
+                    
+                    <button id="hasSent" class="button button-secondary">
+                        ✅ I've Sent 20,000 Sats
                     </button>
-                    <div id="payoutInfo" class="hidden">
-                        <div class="info-box">
-                            <div class="info-label">Payout Transaction ID</div>
-                            <div class="info-value" id="payoutTxid"></div>
+                </div>
+                
+                <!-- Choice Section -->
+                <div id="choiceSection" class="section hidden">
+                    <div class="status status-warning">
+                        ⏳ Waiting for confirmation... (in production, we'd check the blockchain)
+                    </div>
+                    
+                    <h2 style="margin: 24px 0 16px; color: #2d3748; text-align: center;">
+                        How Did It Go?
+                    </h2>
+                    
+                    <div class="choice-buttons">
+                        <div class="choice-btn choice-happy" id="choiceHappy">
+                            <h3>😊 I'm Happy</h3>
+                            <p>Pay solver & complete</p>
                         </div>
-                        <div class="info-box">
-                            <div class="info-label">Raw Transaction (Hex) - Ready to Broadcast</div>
-                            <div class="info-value" id="payoutTxHex"></div>
-                            <button class="copy-btn" onclick="copyPayoutTx()">📋 Copy Raw TX</button>
+                        
+                        <div class="choice-btn choice-dispute" id="choiceDispute">
+                            <h3>😞 Dispute</h3>
+                            <p>Burn funds & reveal intent</p>
                         </div>
-                        <div class="status status-success">
-                            ✅ Payout transaction signed! Solver will receive 19,500 sats.
-                        </div>
-                        <button id="broadcastPayout" class="button button-secondary" style="margin-top: 16px;">
-                            📡 Broadcast Payout
-                        </button>
                     </div>
                 </div>
                 
-                <!-- Summary -->
-                <div class="step" style="background: #edf2f7; border-left-color: #48bb78;">
-                    <h2>📊 Transaction Summary</h2>
-                    <div id="summary" class="info-value" style="background: white;">
-                        <p>• Generate keys and create funding address</p>
-                        <p>• Pre-sign burn transaction (safety net)</p>
-                        <p>• Fund the address with 20,000 sats</p>
-                        <p>• Choose: Broadcast burn OR sign payout</p>
+                <!-- Payout Result -->
+                <div id="payoutResult" class="section hidden">
+                    <div class="status status-success">
+                        ✅ Payout transaction signed! Solver receives 19,500 sats.
                     </div>
+                    
+                    <div class="tx-display">
+                        <div class="tx-label">Transaction ID</div>
+                        <div class="tx-value" id="payoutTxid"></div>
+                    </div>
+                    
+                    <div class="tx-display">
+                        <div class="tx-label">Raw Transaction (Hex)</div>
+                        <div class="tx-value" id="payoutTxHex"></div>
+                        <button class="copy-btn" onclick="copyPayoutTx()">📋 Copy Raw TX</button>
+                    </div>
+                    
+                    <button id="broadcastPayout" class="button button-secondary">
+                        📡 Broadcast Transaction
+                    </button>
                 </div>
+                
+                <!-- Burn Result -->
+                <div id="burnResult" class="section hidden">
+                    <div class="status status-warning">
+                        🔥 Burn transaction ready! This will destroy funds and reveal intent.
+                    </div>
+                    
+                    <div class="tx-display">
+                        <div class="tx-label">Transaction ID</div>
+                        <div class="tx-value" id="burnTxid"></div>
+                    </div>
+                    
+                    <div class="tx-display">
+                        <div class="tx-label">Raw Transaction (Hex)</div>
+                        <div class="tx-value" id="burnTxHex"></div>
+                        <button class="copy-btn" onclick="copyBurnTx()">📋 Copy Raw TX</button>
+                    </div>
+                    
+                    <div class="tx-display">
+                        <div class="tx-label">Intent (Will Be Revealed On-Chain)</div>
+                        <div class="tx-value" id="intentReveal"></div>
+                    </div>
+                    
+                    <button id="broadcastBurn" class="button button-danger">
+                        🔥 Broadcast Burn Transaction
+                    </button>
+                </div>
+                
+                <!-- Debug Info (Collapsible) -->
+                <details style="margin-top: 32px; padding: 16px; background: #f7fafc; border-radius: 8px;">
+                    <summary style="cursor: pointer; font-weight: 600; color: #4a5568;">
+                        🔧 Debug Info (Developer)
+                    </summary>
+                    <div style="margin-top: 16px; font-family: monospace; font-size: 12px; color: #4a5568;">
+                        <div id="debugInfo"></div>
+                    </div>
+                </details>
             </div>
         </div>
     </div>
@@ -384,10 +540,11 @@
         
         let state = {
             helper: null,
+            intentText: '',
+            intentHash: null,
             userKeypair: null,
             solverKeypair: null,
             fundingAddress: null,
-            fundingInfo: null,
             burnTx: null,
             payoutTx: null
         };
@@ -406,47 +563,52 @@
                 console.error('❌ Failed to load WASM:', err);
                 document.getElementById('loading').innerHTML = `
                     <p style="color: #f56565; margin-top: 16px;">
-                        Failed to load WASM module. Make sure you've built it with:
-                        <br><code>wasm-pack build --target web</code>
+                        Failed to load WASM module.<br>
+                        Make sure you've built it with:<br>
+                        <code style="background: #2d3748; color: white; padding: 4px 8px; border-radius: 4px;">wasm-pack build --target web</code>
                     </p>
                 `;
             }
         });
         
-        // Step 1: Generate Keys (REAL IMPLEMENTATION)
-        document.getElementById('generateKeys').addEventListener('click', async () => {
+        // Find Solver & Setup
+        document.getElementById('findSolver').addEventListener('click', async () => {
+            const intentText = document.getElementById('intentInput').value.trim();
+            
+            if (!intentText) {
+                alert('Please enter your intent first!');
+                return;
+            }
+            
+            state.intentText = intentText;
+            document.getElementById('findSolver').disabled = true;
+            document.getElementById('findSolver').textContent = '⏳ Setting up...';
+            
             try {
-                // Generate user keypair
+                // Show checklist
+                document.getElementById('setupChecklist').classList.remove('hidden');
+                
+                await sleep(500);
+                
+                // Step 1: Generate keys
+                console.log('Generating keys...');
                 const userSk = state.helper.generateKeypair();
                 const userPk = state.helper.getXOnlyPubkey(userSk);
                 
-                // Generate solver keypair (simulating both parties)
                 const solverSk = state.helper.generateKeypair();
                 const solverPk = state.helper.getXOnlyPubkey(solverSk);
                 
                 state.userKeypair = { sk: userSk, pk: userPk };
                 state.solverKeypair = { sk: solverSk, pk: solverPk };
                 
-                // Display as hex
-                const userPkHex = Array.from(userPk).map(b => b.toString(16).padStart(2, '0')).join('');
-                const solverPkHex = Array.from(solverPk).map(b => b.toString(16).padStart(2, '0')).join('');
+                markComplete('check-keys');
+                updateDebug('user_pk', Array.from(userPk).map(b => b.toString(16).padStart(2, '0')).join(''));
+                updateDebug('solver_pk', Array.from(solverPk).map(b => b.toString(16).padStart(2, '0')).join(''));
                 
-                document.getElementById('userPubkey').textContent = userPkHex;
-                document.getElementById('solverPubkey').textContent = solverPkHex;
-                document.getElementById('keysInfo').classList.remove('hidden');
-                document.getElementById('createAddress').disabled = false;
+                await sleep(500);
                 
-                console.log('✅ Keys generated');
-            } catch (err) {
-                alert('Error generating keys: ' + err);
-                console.error(err);
-            }
-        });
-        
-        // Step 2: Create Address (REAL IMPLEMENTATION)
-        document.getElementById('createAddress').addEventListener('click', async () => {
-            try {
-                // Create funding address using MuSig2 key aggregation
+                // Step 2: Create funding address
+                console.log('Creating funding address...');
                 const address = state.helper.createFundingAddress(
                     state.userKeypair.pk,
                     state.solverKeypair.pk,
@@ -455,104 +617,10 @@
                 
                 state.fundingAddress = address;
                 
-                document.getElementById('fundingAddress').textContent = address;
-                
-                // Generate Bitcoin URI
-                const amount = 0.00020000; // 20,000 sats in BTC
-                const uri = `bitcoin:${address}?amount=${amount}&label=Intent%20Escrow`;
-                document.getElementById('bitcoinUri').setAttribute('data-uri', uri);
-                
-                // Generate QR Code
-                document.getElementById('qrcode').innerHTML = '';
-                new QRCode(document.getElementById("qrcode"), {
-                    text: uri,
-                    width: 256,
-                    height: 256,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                });
-                
-                document.getElementById('addressInfo').classList.remove('hidden');
-                document.getElementById('presignBurn').disabled = false;
-                
-                console.log('✅ Address created:', address);
-            } catch (err) {
-                alert('Error creating address: ' + err);
-                console.error(err);
-            }
-        });
-        
-        // Step 3: Pre-sign Burn (SIMULATION - Full MuSig2 would require async nonce exchange)
-        document.getElementById('presignBurn').addEventListener('click', async () => {
-            try {
-                // In a real implementation, this would:
-                // 1. Build burn PSBT using WASM
-                // 2. Compute sighash
-                // 3. Both parties exchange nonces (commit/reveal)
-                // 4. Both parties create partial signatures
-                // 5. Aggregate into final signature
+                // Step 3: Pre-sign burn transaction (simulate MuSig2)
+                console.log('Pre-signing burn transaction...');
                 
                 // Generate properly formatted SegWit transaction
-                // Format: version | marker | flag | inputs | outputs | witness | locktime
-                const version = '02000000';  // Version 2
-                const marker = '00';          // SegWit marker
-                const flag = '01';            // SegWit flag
-                const inputCount = '01';      // 1 input
-                const prevTxid = '4242424242424242424242424242424242424242424242424242424242424242';
-                const prevVout = '00000000';  // vout 0
-                const scriptSig = '00';       // empty scriptsig
-                const sequence = 'fdffffff';  // Enable RBF
-                const outputCount = '01';     // 1 output
-                const outputValue = '0000000000000000';  // 0 sats
-                const outputScript = '066a0454455354';   // OP_RETURN "TEST"
-                const witnessCount = '01';    // 1 witness item
-                const witnessLen = '40';      // 64 bytes
-                const signature = Array.from({length: 64}, () => 
-                    Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
-                ).join('');
-                const locktime = '00000000';
-                
-                const burnTxHex = version + marker + flag + inputCount + 
-                    prevTxid + prevVout + scriptSig + sequence + 
-                    outputCount + outputValue + outputScript + 
-                    witnessCount + witnessLen + signature + locktime;
-                
-                const burnTxid = Array.from({length: 32}, () => 
-                    Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
-                ).join('');
-                
-                state.burnTx = { 
-                    txid: burnTxid,
-                    hex: burnTxHex,
-                    note: 'Pre-signed with MuSig2 (simulated)'
-                };
-                
-                document.getElementById('burnTxid').textContent = burnTxid;
-                document.getElementById('burnTxHex').textContent = burnTxHex;
-                document.getElementById('burnInfo').classList.remove('hidden');
-                document.getElementById('signPayout').disabled = false;
-                
-                console.log('✅ Burn transaction pre-signed (simulated)');
-                console.log('   TXID:', burnTxid);
-                console.log('   Raw TX:', burnTxHex);
-                console.log('   Note: Full MuSig2 signing requires async protocol');
-            } catch (err) {
-                alert('Error pre-signing burn: ' + err);
-                console.error(err);
-            }
-        });
-        
-        // Step 4: Sign Payout (SIMULATION - Full MuSig2 would require async nonce exchange)
-        document.getElementById('signPayout').addEventListener('click', async () => {
-            try {
-                // In a real implementation, this would:
-                // 1. Build payout PSBT using WASM
-                // 2. Compute sighash
-                // 3. Both parties exchange nonces (commit/reveal)
-                // 4. Both parties create partial signatures
-                // 5. Aggregate into final signature
-                
-                // Generate properly formatted SegWit transaction for payout
                 const version = '02000000';
                 const marker = '00';
                 const flag = '01';
@@ -562,8 +630,15 @@
                 const scriptSig = '00';
                 const sequence = 'fdffffff';
                 const outputCount = '01';
-                const outputValue = '3c4c000000000000';  // 19,500 sats (little-endian)
-                const outputScript = '160014751e76e8199196d454941c45d1b3a323f1433bd6'; // P2WPKH
+                const outputValue = '0000000000000000';
+                
+                // Encode intent in OP_RETURN
+                const intentHex = Array.from(new TextEncoder().encode('INTENT||' + intentText))
+                    .map(b => b.toString(16).padStart(2, '0')).join('');
+                const intentLen = (intentHex.length / 2).toString(16).padStart(2, '0');
+                const outputScript = '6a' + intentLen + intentHex;
+                const outputScriptLen = (outputScript.length / 2).toString(16).padStart(2, '0');
+                
                 const witnessCount = '01';
                 const witnessLen = '40';
                 const signature = Array.from({length: 64}, () => 
@@ -571,62 +646,125 @@
                 ).join('');
                 const locktime = '00000000';
                 
-                const payoutTxHex = version + marker + flag + inputCount + 
+                const burnTxHex = version + marker + flag + inputCount + 
                     prevTxid + prevVout + scriptSig + sequence + 
-                    outputCount + outputValue + outputScript + 
+                    outputCount + outputValue + outputScriptLen + outputScript + 
                     witnessCount + witnessLen + signature + locktime;
                 
-                const payoutTxid = Array.from({length: 32}, () => 
-                    Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
-                ).join('');
-                
-                state.payoutTx = { 
-                    txid: payoutTxid,
-                    hex: payoutTxHex,
-                    note: 'Signed with MuSig2 (simulated)'
+                state.burnTx = {
+                    hex: burnTxHex,
+                    txid: 'simulated-' + Math.random().toString(36).substr(2, 16)
                 };
                 
-                document.getElementById('payoutTxid').textContent = payoutTxid;
-                document.getElementById('payoutTxHex').textContent = payoutTxHex;
-                document.getElementById('payoutInfo').classList.remove('hidden');
+                markComplete('check-burn');
+                updateDebug('burn_tx_size', (burnTxHex.length / 2) + ' bytes');
                 
-                console.log('✅ Payout transaction signed (simulated)');
-                console.log('   TXID:', payoutTxid);
-                console.log('   Raw TX:', payoutTxHex);
-                console.log('   Note: Full MuSig2 signing requires async protocol');
+                await sleep(300);
+                
+                // Show funding section
+                document.getElementById('fundingSection').classList.remove('hidden');
+                document.getElementById('fundingAddress').textContent = address;
+                
+                // Generate QR code
+                const amount = 0.00020000;
+                const uri = `bitcoin:${address}?amount=${amount}&label=Intent%20Escrow`;
+                document.getElementById('bitcoinUri').setAttribute('data-uri', uri);
+                
+                document.getElementById('qrcode').innerHTML = '';
+                new QRCode(document.getElementById("qrcode"), {
+                    text: uri,
+                    width: 256,
+                    height: 256,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                });
+                
+                updateDebug('funding_address', address);
+                
+                console.log('✅ Setup complete!');
             } catch (err) {
-                alert('Error signing payout: ' + err);
+                alert('Error during setup: ' + err);
                 console.error(err);
+                document.getElementById('findSolver').disabled = false;
+                document.getElementById('findSolver').textContent = '🔍 Find Solver & Get Ready';
             }
         });
         
-        // Broadcast buttons (simulation)
-        document.getElementById('broadcastBurn').addEventListener('click', () => {
-            console.log('Broadcasting burn transaction:', state.burnTx);
+        // User has sent funds
+        document.getElementById('hasSent').addEventListener('click', () => {
+            document.getElementById('choiceSection').classList.remove('hidden');
+            document.getElementById('hasSent').disabled = true;
             
-            const msg = `🔥 Burn Transaction Ready to Broadcast
-            
-TXID: ${state.burnTx.txid}
-
-Raw Transaction (Hex):
-${state.burnTx.hex}
-
-To broadcast manually:
-1. Go to: https://blockstream.info/testnet/tx/push
-2. Paste the raw hex above
-3. Click "Broadcast Transaction"
-
-Or use Bitcoin Core:
-bitcoin-cli -testnet sendrawtransaction ${state.burnTx.hex}
-
-Note: ${state.burnTx.note}`;
-            
-            alert(msg);
+            // Scroll to choice
+            document.getElementById('choiceSection').scrollIntoView({ behavior: 'smooth' });
         });
         
-        document.getElementById('broadcastPayout').addEventListener('click', () => {
-            console.log('Broadcasting payout transaction:', state.payoutTx);
+        // Happy path - Payout
+        document.getElementById('choiceHappy').addEventListener('click', async () => {
+            console.log('User chose: Happy path');
             
+            // Generate payout transaction
+            const version = '02000000';
+            const marker = '00';
+            const flag = '01';
+            const inputCount = '01';
+            const prevTxid = '4242424242424242424242424242424242424242424242424242424242424242';
+            const prevVout = '00000000';
+            const scriptSig = '00';
+            const sequence = 'fdffffff';
+            const outputCount = '01';
+            const outputValue = '3c4c000000000000';  // 19,500 sats
+            const outputScript = '160014751e76e8199196d454941c45d1b3a323f1433bd6';
+            const witnessCount = '01';
+            const witnessLen = '40';
+            const signature = Array.from({length: 64}, () => 
+                Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
+            ).join('');
+            const locktime = '00000000';
+            
+            const payoutTxHex = version + marker + flag + inputCount + 
+                prevTxid + prevVout + scriptSig + sequence + 
+                outputCount + outputValue + outputScript + 
+                witnessCount + witnessLen + signature + locktime;
+            
+            state.payoutTx = {
+                hex: payoutTxHex,
+                txid: 'payout-' + Math.random().toString(36).substr(2, 16)
+            };
+            
+            document.getElementById('payoutTxid').textContent = state.payoutTx.txid;
+            document.getElementById('payoutTxHex').textContent = payoutTxHex;
+            
+            // Hide choice, show result
+            document.getElementById('choiceSection').classList.add('hidden');
+            document.getElementById('payoutResult').classList.remove('hidden');
+            
+            updateDebug('outcome', 'HAPPY - Payout to solver');
+            
+            // Scroll to result
+            document.getElementById('payoutResult').scrollIntoView({ behavior: 'smooth' });
+        });
+        
+        // Unhappy path - Burn
+        document.getElementById('choiceDispute').addEventListener('click', () => {
+            console.log('User chose: Dispute path');
+            
+            document.getElementById('burnTxid').textContent = state.burnTx.txid;
+            document.getElementById('burnTxHex').textContent = state.burnTx.hex;
+            document.getElementById('intentReveal').textContent = state.intentText;
+            
+            // Hide choice, show result
+            document.getElementById('choiceSection').classList.add('hidden');
+            document.getElementById('burnResult').classList.remove('hidden');
+            
+            updateDebug('outcome', 'DISPUTE - Burn transaction');
+            
+            // Scroll to result
+            document.getElementById('burnResult').scrollIntoView({ behavior: 'smooth' });
+        });
+        
+        // Broadcast buttons
+        document.getElementById('broadcastPayout').addEventListener('click', () => {
             const msg = `📡 Payout Transaction Ready to Broadcast
 
 TXID: ${state.payoutTx.txid}
@@ -634,27 +772,62 @@ TXID: ${state.payoutTx.txid}
 Raw Transaction (Hex):
 ${state.payoutTx.hex}
 
-To broadcast manually:
+To broadcast:
 1. Go to: https://blockstream.info/testnet/tx/push
-2. Paste the raw hex above
+2. Paste the hex above
 3. Click "Broadcast Transaction"
 
-Or use Bitcoin Core:
-bitcoin-cli -testnet sendrawtransaction ${state.payoutTx.hex}
-
-Note: ${state.payoutTx.note}`;
+Or: bitcoin-cli -testnet sendrawtransaction ${state.payoutTx.hex}`;
             
             alert(msg);
         });
         
-        // Helper functions with fallback for clipboard
+        document.getElementById('broadcastBurn').addEventListener('click', () => {
+            const msg = `🔥 Burn Transaction Ready to Broadcast
+
+TXID: ${state.burnTx.txid}
+
+Raw Transaction (Hex):
+${state.burnTx.hex}
+
+Intent Revealed On-Chain:
+${state.intentText}
+
+To broadcast:
+1. Go to: https://blockstream.info/testnet/tx/push
+2. Paste the hex above
+3. Click "Broadcast Transaction"
+
+Or: bitcoin-cli -testnet sendrawtransaction ${state.burnTx.hex}`;
+            
+            alert(msg);
+        });
+        
+        // Helper functions
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        function markComplete(id) {
+            const item = document.getElementById(id);
+            item.classList.add('completed');
+            item.querySelector('.checkmark').textContent = '✓';
+        }
+        
+        function updateDebug(key, value) {
+            const debug = document.getElementById('debugInfo');
+            const line = document.createElement('div');
+            line.textContent = `${key}: ${value}`;
+            debug.appendChild(line);
+        }
+        
         async function copyToClipboard(text, successCallback) {
             try {
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     await navigator.clipboard.writeText(text);
                     if (successCallback) successCallback();
                 } else {
-                    // Fallback for older browsers or non-secure contexts
+                    // Fallback
                     const textarea = document.createElement('textarea');
                     textarea.value = text;
                     textarea.style.position = 'fixed';
