@@ -477,11 +477,22 @@
                 
                 // Step 1: Build unsigned burn PSBT
                 console.log('Building unsigned PSBT...');
+                // Build BTI1 payload: chain_id=1, intent_hash=deadbeef... (20 bytes)
+                const chainId = 1;
+                const intentHashHex = 'deadbeef'.repeat(5); // 20 bytes (40 hex chars)
+                // Demo-only fee handling: subtract a flat 500 sats so the tx relays.
+                // Final system: we won't provide fees here; a separate fee-payer will add inputs
+                // using SIGHASH_ALL|ANYONECANPAY while keeping outputs unchanged.
+                // (This line exists only for the demo UX.)
+                const burnAmount = BigInt(FUNDING_AMOUNT) - 500n;
                 const unsignedPsbt = wasm.buildBurnPsbt(
                     fundingTxid,
                     vout,
                     BigInt(FUNDING_AMOUNT),
-                    payloadHex
+                    burnAmount,
+                    chainId,
+                    intentHashHex,
+                    'regtest'
                 );
                 
                 console.log('✅ Unsigned burn PSBT created:', unsignedPsbt);

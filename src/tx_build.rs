@@ -101,12 +101,17 @@ pub fn build_payout_psbt(
 
 // ---------- Burn (key-path, optional after funding) ----------
 
+/// Build a proper burn transaction with:
+/// 1. P2WSH output (actual burn amount - provably unspendable)
+/// 2. OP_RETURN output (0 value, BTI1 metadata)
 pub fn build_burn_psbt(
     funding_outpoint: OutPoint,
     funding_value: Amount,
+    burn_amount: Amount,
     opret_payload: &[u8],
+    network: Network,
 ) -> Result<Psbt> {
-    // 1 input (Taproot key spend), 1 OP_RETURN output (0 sats)
+    // 1 input (Taproot key spend), 2 outputs (P2WSH burn + OP_RETURN metadata)
     let txin = TxIn {
         previous_output: funding_outpoint,
         script_sig: ScriptBuf::new(),
@@ -114,16 +119,28 @@ pub fn build_burn_psbt(
         witness: Witness::new(),
     };
 
-    let txout = TxOut {
+    // Create P2WSH burn output: hash the OP_RETURN script itself
+    // This creates an address that requires the preimage of the OP_RETURN script
+    // Since OP_RETURN scripts are provably unspendable, the P2WSH is also provably unspendable
+    let burn_script = op_return(opret_payload);
+    let p2wsh_address = Address::p2wsh(&burn_script, network);
+    
+    let burn_output = TxOut {
+        value: burn_amount,
+        script_pubkey: p2wsh_address.script_pubkey(),
+    };
+
+    // OP_RETURN metadata output (0 value)
+    let opret_output = TxOut {
         value: Amount::ZERO,
-        script_pubkey: op_return(opret_payload),
+        script_pubkey: burn_script,
     };
 
     let tx = Transaction {
         version: bitcoin::transaction::Version::TWO,
         lock_time: absolute::LockTime::ZERO,
         input: vec![txin],
-        output: vec![txout],
+        output: vec![burn_output, opret_output],
     };
 
     let mut psbt = Psbt::from_unsigned_tx(tx).map_err(|e| format!("PSBT error: {}", e))?;
@@ -214,12 +231,24 @@ mod tests {
             vout: 0,
         };
 
-        let psbt = build_burn_psbt(outpoint, Amount::from_sat(20_000), b"INTENT_HASH").unwrap();
+        let psbt = build_burn_psbt(
+            outpoint,
+            Amount::from_sat(20_000),
+            Amount::from_sat(19_000),
+            b"BTI1\x00\x00\x00\x01deadbeefdeadbeefdeadbeef",
+            Network::Regtest,
+        ).unwrap();
+        
         assert_eq!(psbt.unsigned_tx.input.len(), 1);
-        assert_eq!(psbt.unsigned_tx.output.len(), 1);
-        assert!(psbt.unsigned_tx.output[0]
-            .script_pubkey
-            .is_op_return());
+        assert_eq!(psbt.unsigned_tx.output.len(), 2); // P2WSH + OP_RETURN
+        
+        // First output should be P2WSH (burn)
+        assert!(psbt.unsigned_tx.output[0].script_pubkey.is_p2wsh());
+        assert_eq!(psbt.unsigned_tx.output[0].value, Amount::from_sat(19_000));
+        
+        // Second output should be OP_RETURN (metadata)
+        assert!(psbt.unsigned_tx.output[1].script_pubkey.is_op_return());
+        assert_eq!(psbt.unsigned_tx.output[1].value, Amount::ZERO);
     }
 
     #[test]

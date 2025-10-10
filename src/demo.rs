@@ -127,11 +127,19 @@ pub async fn run_demo() {
     println!("║  PATH B: Optional Burn (Key-Path, After Funding)         ║");
     println!("╚═══════════════════════════════════════════════════════════╝");
 
-    let burn_payload = b"INTENT||dispute_marker";
+    // Build BTI1 payload: chain_id=1, intent_hash=deadbeef...
+    let mut burn_payload = Vec::new();
+    burn_payload.extend_from_slice(b"BTI1");
+    burn_payload.extend_from_slice(&1u32.to_be_bytes()); // chain_id = 1
+    burn_payload.extend_from_slice(&[0xde, 0xad, 0xbe, 0xef, 0xde, 0xad, 0xbe, 0xef, 0xde, 0xad, 0xbe, 0xef, 0xde, 0xad, 0xbe, 0xef, 0xde, 0xad, 0xbe, 0xef]); // 20 bytes
+    
+    let burn_amount = Amount::from_sat(18_500); // Burn 18.5k, rest goes to fees
     let burn_psbt = build_burn_psbt(
         funding_outpoint,
         funding_value,
-        burn_payload,
+        burn_amount,
+        &burn_payload,
+        Network::Regtest,
     ).expect("burn psbt");
 
     let burn_sighash = keyspend_sighash(

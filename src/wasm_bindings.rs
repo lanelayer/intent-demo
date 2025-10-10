@@ -222,32 +222,78 @@ pub fn wasm_create_refund_address(
     Ok(serde_wasm_bindgen::to_value(&info)?)
 }
 
-/// Build a burn PSBT (OP_RETURN)
+/// Build a proper burn PSBT with BTI1 format
+/// Creates two outputs:
+/// 1. P2WSH output with burn_amount (provably unspendable)
+/// 2. OP_RETURN output with BTI1 metadata (0 value)
 #[wasm_bindgen(js_name = buildBurnPsbt)]
 pub fn wasm_build_burn_psbt(
     txid_hex: &str,
     vout: u32,
-    value_sats: u64,
-    payload_hex: &str,
+    funding_value_sats: u64,
+    burn_amount_sats: u64,
+    chain_id: u32,
+    intent_hash_hex: &str,
+    network: &str,
 ) -> Result<JsValue, JsValue> {
     // Parse txid - use proper parsing that handles display format
     let txid: Txid = txid_hex.parse()
         .map_err(|e| JsValue::from_str(&format!("Invalid txid: {:?}", e)))?;
 
-    // Parse payload
-    let payload = hex::decode(payload_hex)
-        .map_err(|e| JsValue::from_str(&format!("Invalid payload hex: {}", e)))?;
+    // Parse network
+    let btc_network = match network {
+        "mainnet" => Network::Bitcoin,
+        "testnet" => Network::Testnet,
+        "signet" => Network::Signet,
+        "regtest" => Network::Regtest,
+        _ => return Err(JsValue::from_str(&format!("Unknown network: {}", network))),
+    };
 
-    // Build PSBT
-    let outpoint = OutPoint { txid, vout };
-    let amount = Amount::from_sat(value_sats);
+    // Parse intent hash (20 bytes)
+    let intent_hash_bytes = hex::decode(intent_hash_hex)
+        .map_err(|e| JsValue::from_str(&format!("Invalid intent hash hex: {}", e)))?;
     
-    let psbt = build_burn_psbt(outpoint, amount, &payload)
+    if intent_hash_bytes.len() != 20 {
+        return Err(JsValue::from_str(&format!(
+            "Intent hash must be 20 bytes, got {}",
+            intent_hash_bytes.len()
+        )));
+    }
+
+    // Build BTI1 payload: "BTI1" || chain_id (4 bytes BE) || intent_hash (20 bytes)
+    let mut payload = Vec::with_capacity(4 + 4 + 20);
+    payload.extend_from_slice(b"BTI1");
+    payload.extend_from_slice(&chain_id.to_be_bytes());
+    payload.extend_from_slice(&intent_hash_bytes);
+
+    if payload.len() > 80 {
+        return Err(JsValue::from_str(&format!(
+            "OP_RETURN payload {} bytes exceeds standard relay policy (80 bytes)",
+            payload.len()
+        )));
+    }
+
+    web_sys::console::log_1(&JsValue::from_str(&format!(
+        "Building BTI1 burn: chain_id={}, intent_hash={}, burn_amount={} sats",
+        chain_id, intent_hash_hex, burn_amount_sats
+    )));
+
+    // Build PSBT with P2WSH burn + OP_RETURN metadata
+    let outpoint = OutPoint { txid, vout };
+    let funding_value = Amount::from_sat(funding_value_sats);
+    let burn_amount = Amount::from_sat(burn_amount_sats);
+    
+    let psbt = build_burn_psbt(outpoint, funding_value, burn_amount, &payload, btc_network)
         .map_err(|e| JsValue::from_str(&e))?;
 
     let tx = psbt.extract_tx().map_err(|e| JsValue::from_str(&format!("Extract tx error: {:?}", e)))?;
     let tx_hex = hex::encode(serialize(&tx));
     let tx_txid = tx.compute_txid();
+
+    web_sys::console::log_1(&JsValue::from_str(&format!(
+        "✅ BTI1 burn PSBT created: {} outputs (P2WSH + OP_RETURN)",
+        tx.output.len()
+    )));
 
     let info = PsbtInfo {
         hex: tx_hex,
