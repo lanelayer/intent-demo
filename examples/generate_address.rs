@@ -44,7 +44,7 @@ fn main() {
         &user_x,
         &solver_x,
         Some(&intent_commit),
-        Network::Testnet,
+        Network::Regtest,
     )
     .expect("funding address");
 
@@ -128,7 +128,7 @@ fn main() {
     // 6. Build PAYOUT PSBT (cooperative spend)
     println!("6. Building PAYOUT transaction (cooperative)...");
 
-    let solver_address = "tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx" // Example testnet address
+    let solver_address = "bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080" // Example regtest address
         .parse::<bitcoin::Address<_>>()
         .unwrap()
         .assume_checked();

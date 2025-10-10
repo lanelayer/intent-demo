@@ -21,7 +21,7 @@ fn main() {
     let (solver_x, _) = solver_kp.x_only_public_key();
     
     // Create funding address
-    let funding_info = build_funding_address(&user_x, &solver_x, None, Network::Testnet)
+    let funding_info = build_funding_address(&user_x, &solver_x, None, Network::Regtest)
         .expect("funding address");
     
     println!("Funding address: {}\n", funding_info.address);
@@ -98,7 +98,7 @@ fn main() {
     println!("   - Funding UTXO (4242...4242:0) doesn't exist on-chain");
     println!("   - It's for demonstration purposes only");
     println!("\nTo broadcast a real transaction:");
-    println!("   1. Send real testnet BTC to: {}", funding_info.address);
+    println!("   1. Send real regtest BTC to: {}", funding_info.address);
     println!("   2. Use the real TXID and vout");
     println!("   3. Build and sign with that real UTXO");
 }

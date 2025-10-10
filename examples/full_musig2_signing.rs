@@ -143,7 +143,7 @@ fn main() {
         &user_x,
         &solver_x,
         Some(&intent_commit),
-        Network::Testnet,
+        Network::Regtest,
     )
     .expect("funding address");
 
@@ -220,7 +220,7 @@ fn main() {
     println!("║  PAYOUT TRANSACTION (Cooperative)                         ║");
     println!("╚═══════════════════════════════════════════════════════════╝");
 
-    let solver_address = "tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx"
+    let solver_address = "bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080"
         .parse::<bitcoin::Address<_>>()
         .unwrap()
         .assume_checked();
@@ -300,6 +300,6 @@ fn main() {
     println!("   ✅ Key-path spend (private on-chain)");
     println!("   ✅ Intent committed in taptweak\n");
 
-    println!("🎉 Both transactions are REAL and could be broadcast to testnet!");
+    println!("🎉 Both transactions are REAL and could be broadcast to regtest!");
     println!("   (if the funding UTXO existed)\n");
 }

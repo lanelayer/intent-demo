@@ -674,7 +674,7 @@
                 const address = state.helper.createFundingAddress(
                     state.userKeypair.pk,
                     state.solverKeypair.pk,
-                    'testnet'
+                    'regtest'
                 );
                 
                 state.fundingAddress = address;
@@ -838,12 +838,9 @@ TXID: ${state.payoutTx.txid}
 Raw Transaction (Hex):
 ${state.payoutTx.hex}
 
-To broadcast:
-1. Go to: https://blockstream.info/testnet/tx/push
-2. Paste the hex above
-3. Click "Broadcast Transaction"
+To broadcast to regtest:
 
-Or: bitcoin-cli -testnet sendrawtransaction ${state.payoutTx.hex}`;
+bitcoin-cli -regtest sendrawtransaction ${state.payoutTx.hex}`;
             
             alert(msg);
         });
@@ -859,12 +856,9 @@ ${state.burnTx.hex}
 Intent Revealed On-Chain:
 ${state.intentText}
 
-To broadcast:
-1. Go to: https://blockstream.info/testnet/tx/push
-2. Paste the hex above
-3. Click "Broadcast Transaction"
+To broadcast to regtest:
 
-Or: bitcoin-cli -testnet sendrawtransaction ${state.burnTx.hex}`;
+bitcoin-cli -regtest sendrawtransaction ${state.burnTx.hex}`;
             
             alert(msg);
         });
