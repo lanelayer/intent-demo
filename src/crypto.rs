@@ -6,9 +6,10 @@
 //! - Key tweaking for BIP-341
 
 use bitcoin::hashes::{sha256, Hash, HashEngine};
-use bitcoin::{Address, Network, XOnlyPublicKey as BitcoinXOnly};
+use bitcoin::{Address, Network, ScriptBuf, XOnlyPublicKey as BitcoinXOnly, taproot};
+use bitcoin::opcodes::all as op;
 use secp256k1::musig::KeyAggCache;
-use secp256k1::{PublicKey, Scalar, XOnlyPublicKey};
+use secp256k1::{PublicKey, Scalar, Secp256k1, XOnlyPublicKey};
 
 use crate::types::Result;
 
@@ -118,6 +119,89 @@ fn apply_tweak(pubkey: &XOnlyPublicKey, tweak: &Scalar) -> Result<XOnlyPublicKey
 pub fn aggregate_pubkeys(pubkeys: &[PublicKey]) -> KeyAggCache {
     let refs: Vec<&PublicKey> = pubkeys.iter().collect();
     KeyAggCache::new(&refs)
+}
+
+/// Create a CSV refund leaf script: <Δ> CSV DROP <UserXOnly> CHECKSIG
+/// 
+/// This allows the user to unilaterally refund after Δ blocks using only their key.
+pub fn refund_leaf_script(user_x: XOnlyPublicKey, csv_delta_blocks: u32) -> ScriptBuf {
+    bitcoin::script::Builder::new()
+        .push_int(i64::from(csv_delta_blocks))
+        .push_opcode(op::OP_CSV)
+        .push_opcode(op::OP_DROP)
+        .push_slice(&user_x.serialize())
+        .push_opcode(op::OP_CHECKSIG)
+        .into_script()
+}
+
+/// Taproot address with refund leaf
+pub struct TrWithRefund {
+    pub address: Address,
+    pub output_key: XOnlyPublicKey,
+    pub internal_key: XOnlyPublicKey,  // The untweaked aggregated key
+    pub control_block_refund: taproot::ControlBlock,
+    pub refund_leaf: taproot::TapLeafHash,
+    pub refund_script: ScriptBuf,
+    pub merkle_root: Option<taproot::TapNodeHash>,
+}
+
+/// Build Taproot address with key-path=P_agg (MuSig2) and one refund leaf (CSV)
+/// 
+/// # Arguments
+/// * `secp` - Secp256k1 context
+/// * `agg_x` - Aggregated x-only public key from MuSig2
+/// * `refund_script` - Script for the refund leaf (CSV)
+/// * `network` - Bitcoin network
+/// 
+/// # Returns
+/// TrWithRefund containing address and control block for script-path spend
+pub fn build_tr_with_refund_leaf(
+    _secp: &Secp256k1<secp256k1::All>,
+    agg_x: XOnlyPublicKey,
+    refund_script: ScriptBuf,
+    network: Network,
+) -> Result<TrWithRefund> {
+    // Create taproot builder with refund leaf
+    let builder = taproot::TaprootBuilder::new()
+        .add_leaf(0, refund_script.clone())
+        .map_err(|e| format!("Failed to add leaf: {:?}", e))?;
+    
+    // Convert to bitcoin XOnlyPublicKey
+    let btc_xonly = BitcoinXOnly::from_slice(&agg_x.serialize())
+        .map_err(|e| format!("Invalid agg key: {}", e))?;
+    
+    // Create a bitcoin secp256k1 context for finalize
+    let btc_secp = bitcoin::secp256k1::Secp256k1::verification_only();
+    
+    // Finalize taproot tree
+    let spend_info = builder
+        .finalize(&btc_secp, btc_xonly)
+        .map_err(|e| format!("Failed to finalize taproot: {:?}", e))?;
+    
+    let output_key_btc = spend_info.output_key();
+    let address = Address::p2tr_tweaked(output_key_btc, network);
+    let merkle_root = spend_info.merkle_root();
+    
+    // Get control block for the refund leaf
+    let leaf_hash = taproot::TapLeafHash::from_script(&refund_script, taproot::LeafVersion::TapScript);
+    let control_block_refund = spend_info
+        .control_block(&(refund_script.clone(), taproot::LeafVersion::TapScript))
+        .ok_or("Failed to get control block")?;
+    
+    // Convert output key back to secp256k1 XOnlyPublicKey
+    let output_key_bytes: [u8; 32] = output_key_btc.to_x_only_public_key().serialize();
+    let output_key = XOnlyPublicKey::from_byte_array(output_key_bytes)
+        .map_err(|e| format!("Invalid output key: {:?}", e))?;
+    
+    Ok(TrWithRefund {
+        address,
+        output_key,
+        internal_key: agg_x,  // Store the untweaked key
+        control_block_refund,
+        refund_leaf: leaf_hash,
+        refund_script,
+        merkle_root,
+    })
 }
 
 #[cfg(test)]

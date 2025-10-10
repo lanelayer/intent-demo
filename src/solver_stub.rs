@@ -81,3 +81,65 @@ impl SolverWire for Loopback {
     }
 }
 
+#[cfg(test)]
+pub struct MockSolverWire {
+    keypair: secp256k1::Keypair,
+    key_agg_cache: secp256k1::musig::KeyAggCache,
+    their_commit: Option<NonceCommit>,
+    their_reveal: Option<NonceReveal>,
+    their_partial: Option<PartialSig>,
+}
+
+#[cfg(test)]
+impl MockSolverWire {
+    pub fn new(keypair: secp256k1::Keypair, key_agg_cache: secp256k1::musig::KeyAggCache) -> Self {
+        Self {
+            keypair,
+            key_agg_cache,
+            their_commit: None,
+            their_reveal: None,
+            their_partial: None,
+        }
+    }
+}
+
+#[cfg(test)]
+#[async_trait::async_trait]
+impl SolverWire for MockSolverWire {
+    async fn send_commit(&mut self, c: NonceCommit) {
+        self.their_commit = Some(c);
+    }
+    
+    async fn recv_commit(&mut self) -> NonceCommit {
+        // For testing, just echo back a dummy commit
+        NonceCommit([0x42; 32])
+    }
+
+    async fn send_reveal(&mut self, r: NonceReveal) {
+        self.their_reveal = Some(r);
+    }
+    
+    async fn recv_reveal(&mut self) -> NonceReveal {
+        // For testing, return a valid nonce
+        let mut rng = secp256k1::rand::rng();
+        let session_rand = secp256k1::musig::SessionSecretRand::from_rng(&mut rng);
+        let msg = [0u8; 32]; // dummy message
+        let (_sec, pub_nonce) = self.key_agg_cache.nonce_gen(
+            session_rand,
+            self.keypair.public_key(),
+            &msg,
+            None
+        );
+        NonceReveal(pub_nonce.serialize().to_vec())
+    }
+
+    async fn send_partial(&mut self, s: PartialSig) {
+        self.their_partial = Some(s);
+    }
+    
+    async fn recv_partial(&mut self) -> PartialSig {
+        // For testing, return a dummy partial sig
+        PartialSig(vec![0x42; 32])
+    }
+}
+

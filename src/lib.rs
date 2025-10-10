@@ -6,9 +6,16 @@
 use wasm_bindgen::prelude::*;
 
 pub mod crypto;
+pub mod musig;
+pub mod refund_leaf;
+pub mod sighash;
 pub mod solver_stub;
-pub mod tx;
+pub mod tx_build;
 pub mod types;
+
+// Keep tx.rs for backwards compatibility (will be deprecated)
+#[path = "tx.rs"]
+pub mod tx_legacy;
 
 #[cfg(any(test, feature = "demo"))]
 pub mod demo;
@@ -18,9 +25,15 @@ pub mod wasm_bindings;
 
 // Re-export key types
 pub use crypto::*;
+pub use musig::*;
+pub use refund_leaf::*;
+pub use sighash::*;
 pub use solver_stub::*;
-pub use tx::*;
+pub use tx_build::*;
 pub use types::*;
+
+// Re-export legacy tx module for backwards compatibility
+pub use tx_legacy as tx;
 
 #[wasm_bindgen]
 pub fn init() {
