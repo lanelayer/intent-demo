@@ -13,7 +13,7 @@ fn main() {
         .to_string();
     
     println!("cargo:rustc-env=BUILD_TIMESTAMP={}", timestamp);
-    println!("cargo:rerun-if-changed=build.rs");
+    // Always rerun to get fresh timestamp - don't use rerun-if-changed
 }
 
 

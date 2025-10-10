@@ -571,11 +571,11 @@ pub fn wasm_sign_burn_psbt_demo(
     // Add witness_utxo for sighash computation
     psbt.inputs[0].witness_utxo = Some(prevout.clone());
     
-    // Compute sighash (use Default for standard key-path spend)
+    // Compute sighash (use AllPlusAnyoneCanPay to allow adding inputs for fee bumping)
     let sighash = crate::sighash::keyspend_sighash(
         &psbt,
         &prevout,
-        bitcoin::sighash::TapSighashType::Default,
+        bitcoin::sighash::TapSighashType::AllPlusAnyoneCanPay,
     ).map_err(|e| JsValue::from_str(&e))?;
     
     // MuSig2 signing (both parties locally for demo)
@@ -633,8 +633,17 @@ pub fn wasm_sign_burn_psbt_demo(
         hex::encode(&sig_bytes[..32])
     )));
     
-    // Attach signature to PSBT
-    psbt = attach_keyspend_sig(psbt, sig_bytes);
+    // Attach signature with SIGHASH_ALL|ANYONECANPAY byte (0x81) to PSBT
+    // For ANYONECANPAY, we must append the sighash byte (65 bytes total)
+    let mut sig_with_sighash = sig_bytes.to_vec();
+    sig_with_sighash.push(0x81); // SIGHASH_ALL | SIGHASH_ANYONECANPAY
+    
+    web_sys::console::log_1(&JsValue::from_str(&format!(
+        "Appending sighash byte 0x81 (ALL|ANYONECANPAY), total sig length: {}",
+        sig_with_sighash.len()
+    )));
+    
+    psbt.inputs[0].final_script_witness = Some(bitcoin::Witness::from_slice(&[&sig_with_sighash]));
     
     // Extract final transaction
     let signed_tx = psbt.extract_tx()
@@ -653,15 +662,22 @@ pub fn wasm_sign_burn_psbt_demo(
     }
     
     let witness_sig = &signed_tx.input[0].witness[0];
-    if witness_sig.len() != 64 {
+    if witness_sig.len() != 65 {
         return Err(JsValue::from_str(&format!(
-            "SANITY CHECK FAILED: Witness signature should be 64 bytes, got {}",
+            "SANITY CHECK FAILED: Witness signature should be 65 bytes (64 + sighash byte), got {}",
             witness_sig.len()
         )));
     }
     
+    if witness_sig[64] != 0x81 {
+        return Err(JsValue::from_str(&format!(
+            "SANITY CHECK FAILED: Last byte should be 0x81 (ANYONECANPAY), got 0x{:02x}",
+            witness_sig[64]
+        )));
+    }
+    
     web_sys::console::log_1(&JsValue::from_str(&format!(
-        "✅ SANITY CHECK PASSED: Witness has 64-byte signature"
+        "✅ SANITY CHECK PASSED: Witness has 65-byte signature with ANYONECANPAY flag"
     )));
     
     let tx_hex = hex::encode(serialize(&signed_tx));
