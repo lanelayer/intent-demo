@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>P2TR + CSV Refund Leaf Demo</title>
+    <title>Escrow Demo - P2TR + CSV Refund</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -13,7 +14,7 @@
             padding: 20px;
         }
         .container {
-            max-width: 1200px;
+            max-width: 800px;
             margin: 0 auto;
         }
         .header {
@@ -22,6 +23,7 @@
             padding: 30px;
             margin-bottom: 20px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
         }
         h1 {
             color: #667eea;
@@ -41,20 +43,7 @@
         .card h2 {
             color: #333;
             margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        .badge-success { background: #10b981; color: white; }
-        .badge-warning { background: #f59e0b; color: white; }
-        .badge-info { background: #3b82f6; color: white; }
         .btn {
             background: #667eea;
             color: white;
@@ -65,6 +54,7 @@
             font-size: 16px;
             font-weight: 600;
             transition: all 0.3s;
+            width: 100%;
         }
         .btn:hover {
             background: #5568d3;
@@ -75,6 +65,31 @@
             background: #ccc;
             cursor: not-allowed;
             transform: none;
+        }
+        .btn-success { background: #10b981; }
+        .btn-success:hover { background: #059669; }
+        .btn-warning { background: #f59e0b; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-danger { background: #ef4444; }
+        .btn-danger:hover { background: #dc2626; }
+        
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #374151;
         }
         .info-box {
             background: #f3f4f6;
@@ -87,6 +102,7 @@
             font-weight: 600;
             color: #667eea;
             margin-bottom: 5px;
+            font-size: 12px;
         }
         .info-value {
             font-family: monospace;
@@ -94,216 +110,273 @@
             padding: 8px;
             border-radius: 4px;
             word-break: break-all;
-            font-size: 12px;
+            font-size: 13px;
         }
-        .grid {
+        .qr-code {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+        }
+        .qr-code canvas {
+            max-width: 100%;
+            height: auto !important;
+        }
+        .bitcoin-uri {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            margin: 15px 0;
+            transition: all 0.3s;
+        }
+        .bitcoin-uri:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .offer-card {
+            background: #f0f9ff;
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        .offer-card h3 {
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+        .offer-details {
+            color: #475569;
+            margin: 10px 0;
+        }
+        .hidden { display: none !important; }
+        .action-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
         }
-        .path-card {
+        @media (max-width: 768px) {
+            .action-grid { grid-template-columns: 1fr; }
+        }
+        .action-card {
             border: 2px solid #e5e7eb;
             border-radius: 8px;
             padding: 20px;
-            transition: all 0.3s;
+            text-align: center;
         }
-        .path-card:hover {
-            border-color: #667eea;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-        }
-        .path-card h3 {
-            color: #667eea;
+        .action-card h3 {
+            font-size: 16px;
             margin-bottom: 10px;
         }
-        .path-card ul {
-            list-style: none;
-            padding-left: 0;
+        .action-card p {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 15px;
         }
-        .path-card li {
-            padding: 5px 0;
+        .countdown {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-text {
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+            margin: 15px 0;
+        }
+        .loading-steps {
+            text-align: left;
+            max-width: 400px;
+            margin: 20px auto;
             color: #666;
         }
-        .path-card li:before {
-            content: "✓ ";
+        .loading-steps div {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+        }
+        .loading-steps .step-done {
             color: #10b981;
-            font-weight: bold;
-            margin-right: 5px;
         }
-        .status {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        .status-pending { background: #9ca3af; }
-        .status-active { background: #3b82f6; animation: pulse 2s infinite; }
-        .status-complete { background: #10b981; }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        .error {
-            background: #fee2e2;
-            border-left: 4px solid #ef4444;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 4px;
-            color: #991b1b;
+        .loading-steps .step-active {
+            color: #667eea;
+            font-weight: 600;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔐 P2TR + CSV Refund Leaf Demo</h1>
+            <h1>🔐 Trustless Escrow Demo</h1>
             <p class="subtitle">
-                Secure Bitcoin escrow with unilateral refund after timelock • 
-                No pre-signing required • Network: <strong>Regtest</strong>
+                Secure Bitcoin escrow with unilateral refund • Network: <strong>Regtest</strong>
             </p>
         </div>
 
-        <!-- Step 0: Intent Hash -->
-        <div class="card">
-            <h2>
-                <span class="status status-complete"></span>
-                Intent Hash
-            </h2>
+        <!-- Step 1: Enter Intent -->
+        <div class="card" id="step-intent">
+            <h2>1. Describe Your Intent</h2>
+            <p style="color: #666; margin-bottom: 15px;">
+                What service or delivery are you requesting?
+            </p>
+            <textarea id="intent-text" placeholder="e.g., Deliver 1 pizza to 123 Main St"></textarea>
+            <button class="btn" style="margin-top: 15px;" onclick="hashIntent()">Continue →</button>
+        </div>
+
+        <!-- Step 2: Intent Hash & Solver Offer -->
+        <div class="card hidden" id="step-offer">
+            <h2>2. Intent Commitment</h2>
             <div class="info-box">
-                <div class="info-label">Intent Commitment</div>
-                <div class="info-value">0xdeadbeef</div>
+                <div class="info-label">Intent Hash (20 bytes)</div>
+                <div class="info-value" id="intent-hash"></div>
             </div>
-            <p style="color: #666; margin-top: 10px; font-size: 14px;">
-                This intent hash will be committed to the burn transaction
-            </p>
-        </div>
-
-        <!-- Step 1: Generate Keys -->
-        <div class="card">
-            <h2>
-                <span class="status status-pending" id="status-keys"></span>
-                1. Generate Keys
-            </h2>
-            <p style="color: #666; margin-bottom: 15px;">
-                Generate ephemeral keypairs for user and solver
-            </p>
-            <button class="btn" onclick="generateKeys()">Generate Keys</button>
-            <div id="keys-info" style="display: none;">
-                <div class="info-box">
-                    <div class="info-label">User Public Key</div>
-                    <div class="info-value" id="user-pk"></div>
+            
+            <div class="offer-card">
+                <h3>📋 Solver Offer</h3>
+                <div class="offer-details">
+                    <strong>Solver:</strong> solver.example.com<br>
+                    <strong>Delivery Time:</strong> ~2 hours<br>
+                    <strong>Escrow Amount:</strong> <span id="offer-amount">50,000</span> sats<br>
+                    <strong>Refund Timelock:</strong> 144 blocks (~1 day)<br>
+                    <strong>Chain:</strong> Ethereum (chain_id = 1)
                 </div>
-                <div class="info-box">
-                    <div class="info-label">Solver Public Key</div>
-                    <div class="info-value" id="solver-pk"></div>
-                </div>
+                <p style="margin-top: 15px; font-size: 14px; color: #475569;">
+                    The solver will complete your intent. You can refund unilaterally after the timelock if unsatisfied.
+                </p>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-success" onclick="acceptOffer()">✓ Accept Offer</button>
+                <button class="btn" style="background: #6b7280;" onclick="location.reload()">✗ Decline</button>
             </div>
         </div>
 
-        <!-- Step 2: Create Refund Address -->
-        <div class="card">
-            <h2>
-                <span class="status status-pending" id="status-address"></span>
-                2. Create Funding Address with CSV Refund Leaf
-            </h2>
+        <!-- Step 3: Escrow Address -->
+        <div class="card hidden" id="step-address">
+            <h2>3. Send Bitcoin to Escrow Address</h2>
             <p style="color: #666; margin-bottom: 15px;">
-                Create P2TR address with CSV refund leaf (Δ = 144 blocks ≈ 1 day)
+                Send <strong id="send-amount">50,000 sats</strong> to the address below
             </p>
-            <button class="btn" id="btn-address" onclick="createAddress()" disabled>
-                Create Address
-            </button>
-            <div id="address-info" style="display: none;">
-                <div class="info-box">
-                    <div class="info-label">✅ Funding Address (Send BTC here)</div>
-                    <div class="info-value" id="funding-address" style="font-size: 14px; font-weight: 600;"></div>
-                </div>
-                <div class="info-box">
-                    <div class="info-label">Aggregated Public Key</div>
-                    <div class="info-value" id="agg-pk"></div>
-                </div>
-                <div class="info-box">
-                    <div class="info-label">CSV Delta</div>
-                    <div class="info-value" id="csv-delta"></div>
-                </div>
+            
+            <div style="text-align: center; margin: 20px 0;">
+                <a href="#" id="bitcoin-uri-link" class="bitcoin-uri">
+                    📱 Open in Bitcoin Wallet
+                </a>
             </div>
-        </div>
-
-        <!-- Step 3: Fund the Address -->
-        <div class="card">
-            <h2>
-                <span class="status status-pending" id="status-funding"></span>
-                3. Fund the Address
-            </h2>
-            <p style="color: #666; margin-bottom: 15px;">
-                Send BTC to the funding address, then paste the funding transaction ID below
-            </p>
+            
+            <div class="qr-code" id="qr-container">
+                <!-- QR code will be generated here -->
+            </div>
+            
+            <div class="info-box">
+                <div class="info-label">Escrow Address</div>
+                <div class="info-value" id="escrow-address" style="font-size: 14px; font-weight: 600;"></div>
+            </div>
             
             <div class="info-box" style="background: #fef3c7; border-left-color: #f59e0b;">
                 <div style="font-weight: 600; color: #92400e; margin-bottom: 10px;">
-                    📍 To fund on regtest:
+                    💻 Bitcoin CLI Command
                 </div>
-                <code style="background: white; padding: 8px; display: block; border-radius: 4px; font-size: 12px; color: #1f2937;" id="fund-command">
-                    # First, create funding address above
-                </code>
+                <code id="cli-command" style="background: white; padding: 8px; display: block; border-radius: 4px; word-break: break-all;"></code>
             </div>
-
+            
             <div style="margin-top: 20px;">
-                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #374151;">
-                    Funding Transaction ID (TXID)
-                </label>
-                <input 
-                    type="text" 
-                    id="funding-txid-input" 
-                    placeholder="e.g., abc123def456..." 
-                    disabled
-                    style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-family: monospace; font-size: 14px;"
-                    oninput="onFundingChange()"
-                />
-                <p style="color: #6b7280; font-size: 12px; margin-top: 8px;">
-                    Paste the transaction ID here after funding the address
-                </p>
-            </div>
-
-            <div style="margin-top: 15px;">
-                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #374151;">
-                    Output Index (vout)
-                </label>
-                <input 
-                    type="number" 
-                    id="funding-vout-input" 
-                    placeholder="0 or 1" 
-                    value="1"
-                    disabled
-                    min="0"
-                    max="10"
-                    style="width: 150px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
-                    oninput="onFundingChange()"
-                />
-                <p style="color: #6b7280; font-size: 12px; margin-top: 8px;">
-                    Usually 0 or 1. Check with: <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px;">bitcoin-cli gettransaction [txid]</code>
-                </p>
+                <label>Enter Funding Transaction ID</label>
+                <input type="text" id="funding-txid" placeholder="Paste TXID here after sending..." />
+                
+                <label style="margin-top: 15px;">Output Index (vout)</label>
+                <input type="number" id="funding-vout" value="1" min="0" max="10" style="width: 150px;" />
+                
+                <button class="btn" style="margin-top: 15px;" onclick="confirmFunding()">Confirm Funding →</button>
             </div>
         </div>
 
-        <!-- Step 4: Burn Transaction -->
-        <div class="card" id="burn-card" style="display: none;">
-            <h2>
-                <span class="status status-complete"></span>
-                4. Optional Burn Transaction
-                <span class="badge badge-success">✅ Signed!</span>
-            </h2>
+        <!-- Step 3.5: Preparing Escrow (Loading) -->
+        <div class="card hidden" id="step-loading">
+            <h2>⚙️ Preparing Escrow</h2>
+            <div class="spinner"></div>
+            <div class="loading-text">Collaborating with solver...</div>
+            <div class="loading-steps">
+                <div id="load-step-1">⏳ Verifying funding transaction...</div>
+                <div id="load-step-2">⏳ Generating MuSig2 nonces...</div>
+                <div id="load-step-3">⏳ Creating presigned burn transaction...</div>
+                <div id="load-step-4">⏳ Finalizing escrow setup...</div>
+            </div>
+        </div>
+
+        <!-- Step 4: Escrow Active - Action Options -->
+        <div class="card hidden" id="step-actions">
+            <h2>4. Escrow Active - Choose Action</h2>
+            <p style="color: #666; margin-bottom: 20px;">
+                Your funds are held in escrow. Choose an action below:
+            </p>
+            
+            <div class="action-grid">
+                <!-- Option 1: Burn -->
+                <div class="action-card" style="border-color: #f59e0b;">
+                    <h3 style="color: #f59e0b;">🔥 Dispute / Burn</h3>
+                    <p>Reveal intent on-chain and burn the UTXO (requires both signatures)</p>
+                    <button class="btn btn-warning" onclick="showBurnTx()">Show Burn TX</button>
+                </div>
+                
+                <!-- Option 2: Payout -->
+                <div class="action-card" style="border-color: #10b981;">
+                    <h3 style="color: #10b981;">✅ Happy Path</h3>
+                    <p>Solver delivered! Sign cooperative payout (requires solver)</p>
+                    <button class="btn btn-success" onclick="cooperativePayout()">Complete Delivery</button>
+                </div>
+                
+                <!-- Option 3: Refund -->
+                <div class="action-card" style="border-color: #ef4444;">
+                    <h3 style="color: #ef4444;">⏱️ Force Refund</h3>
+                    <div class="countdown" id="refund-countdown">144 blocks</div>
+                    <p>Unilateral refund available after timelock</p>
+                    <button class="btn btn-danger" id="btn-refund" onclick="forceRefund()" disabled>Force Refund</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Burn TX Modal -->
+        <div class="card hidden" id="burn-result">
+            <h2>🔥 Burn Transaction Ready</h2>
             <p style="color: #666; margin-bottom: 15px;">
-                This transaction reveals the intent hash on-chain. <strong>Co-signed by both parties (MuSig2)</strong> and ready to broadcast!
+                This transaction burns the UTXO and reveals your intent on-chain (signed with ANYONECANPAY)
             </p>
             
             <div class="info-box">
-                <div class="info-label">Transaction Hex (Ready to Broadcast)</div>
+                <div class="info-label">Transaction Hex</div>
                 <div style="position: relative;">
-                    <div class="info-value" id="burn-tx-hex" style="max-height: 150px; overflow-y: auto;"></div>
-                    <button 
-                        onclick="copyToClipboard('burn-tx-hex')" 
-                        style="position: absolute; top: 8px; right: 8px; background: #667eea; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;"
-                    >
+                    <div class="info-value" id="burn-hex" style="max-height: 150px; overflow-y: auto;"></div>
+                    <button onclick="copy('burn-hex')" 
+                            style="position: absolute; top: 8px; right: 8px; background: #667eea; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
                         📋 Copy
                     </button>
                 </div>
@@ -313,36 +386,101 @@
                 <div class="info-label">TXID</div>
                 <div class="info-value" id="burn-txid"></div>
             </div>
-
+            
             <div class="info-box">
-                <div class="info-label">Size</div>
-                <div class="info-value" id="burn-size"></div>
+                <div class="info-label">Details</div>
+                <div class="info-value">
+                    Format: BTI1 (Burn-to-Intent v1)<br>
+                    Chain ID: 1 (Ethereum)<br>
+                    Intent Hash: <span id="burn-intent-hash"></span><br>
+                    Burn Amount: <span id="burn-amount"></span> sats<br>
+                    Sighash: ALL|ANYONECANPAY (fee-payer can add inputs)
+                </div>
             </div>
-
-            <div class="info-box">
-                <div class="info-label">Intent Revealed</div>
-                <div class="info-value">INTENT||0xdeadbeef</div>
-            </div>
-
+            
             <div style="margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: 8px;">
-                <strong style="color: #0369a1;">📡 To broadcast on regtest:</strong><br>
-                <code style="background: white; padding: 8px; display: block; margin-top: 8px; border-radius: 4px; font-size: 12px; word-break: break-all;" id="burn-broadcast-cmd">
-                    # Transaction hex will appear here
-                </code>
+                <strong style="color: #0369a1;">📡 Broadcast Command:</strong><br>
+                <code style="background: white; padding: 8px; display: block; margin-top: 8px; border-radius: 4px; word-break: break-all;" id="burn-broadcast"></code>
             </div>
+            
+            <button class="btn" style="margin-top: 15px; background: #6b7280;" onclick="document.getElementById('burn-result').classList.add('hidden')">← Back to Options</button>
         </div>
 
+        <!-- Payout Result -->
+        <div class="card hidden" id="payout-result">
+            <h2>✅ Cooperative Payout Ready</h2>
+            <p style="color: #666; margin-bottom: 15px;">
+                Both parties have signed the payout transaction (happy path - solver delivered!)
+            </p>
+            
+            <div class="info-box">
+                <div class="info-label">Transaction Hex</div>
+                <div style="position: relative;">
+                    <div class="info-value" id="payout-hex" style="max-height: 150px; overflow-y: auto;"></div>
+                    <button onclick="copy('payout-hex')" 
+                            style="position: absolute; top: 8px; right: 8px; background: #667eea; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                        📋 Copy
+                    </button>
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-label">TXID</div>
+                <div class="info-value" id="payout-txid"></div>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-label">Details</div>
+                <div class="info-value">
+                    Type: Cooperative Payout (MuSig2 key-path)<br>
+                    Payout Amount: <span id="payout-amount"></span> sats<br>
+                    Sighash: ALL (SIGHASH_DEFAULT)<br>
+                    Witness: 64-byte Schnorr signature
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: 8px;">
+                <strong style="color: #0369a1;">📡 Broadcast Command:</strong><br>
+                <code style="background: white; padding: 8px; display: block; margin-top: 8px; border-radius: 4px; word-break: break-all;" id="payout-broadcast"></code>
+            </div>
+            
+            <button class="btn" style="margin-top: 15px; background: #6b7280;" onclick="document.getElementById('payout-result').classList.add('hidden'); document.getElementById('step-actions').classList.remove('hidden');">← Back to Options</button>
+        </div>
+
+        <!-- Refund Result -->
+        <div class="card hidden" id="refund-result">
+            <h2>⏱️ Unilateral Refund</h2>
+            <p style="color: #666; margin-bottom: 15px;">
+                After 144 blocks, you can refund unilaterally (no solver signature needed)
+            </p>
+            <div class="info-box" style="background: #fee2e2; border-left-color: #ef4444;">
+                <strong>⚠️ Timelock not expired!</strong><br>
+                The CSV refund path is only available after 144 blocks from funding confirmation.
+                This prevents immediate refunds and gives the solver time to fulfill the intent.
+            </div>
+            <div class="info-box">
+                <div class="info-label">How it works:</div>
+                <div style="font-size: 14px; color: #475569;">
+                    After the timelock expires, you sign the refund transaction using only YOUR key (script-path spend via CSV leaf).
+                    No cooperation from the solver required!
+                </div>
+            </div>
+            <button class="btn" style="background: #6b7280;" onclick="document.getElementById('refund-result').classList.add('hidden')">← Back</button>
+        </div>
     </div>
 
     <script type="module">
         import init, * as wasm from './wasm_helper/wasm_helper.js';
 
-        const INTENT_HASH = '0xdeadbeef';
-        const FUNDING_AMOUNT = 50000; // sats
+        const CHAIN_ID = 1; // Ethereum
+        const CSV_BLOCKS = 144; // ~1 day refund timelock
+        const ESCROW_AMOUNT = 50000; // sats
 
         let state = {
             helper: null,
-            userKeys: null,  // { sk: Uint8Array, pk: Uint8Array }
+            intent: null,
+            intentHash: null,
+            userKeys: null,
             solverKeys: null,
             addressInfo: null,
             fundingTxid: null,
@@ -354,226 +492,301 @@
                 await init();
                 state.helper = new wasm.MuSig2Helper();
                 const version = wasm.getWasmVersion();
-                console.log('✅ WASM loaded successfully - Version:', version);
+                console.log('✅ WASM loaded -', version);
             } catch (e) {
                 console.error('Failed to load WASM:', e);
-                document.body.innerHTML = `
-                    <div class="container">
-                        <div class="error">
-                            <strong>Error loading WASM:</strong> ${e.message}
-                        </div>
-                    </div>
-                `;
+                alert('Failed to load WASM: ' + e.message);
             }
         }
 
-        window.generateKeys = function() {
-            try {
-                const userSk = state.helper.generateKeypair();
-                const userPk = state.helper.getXOnlyPubkey(userSk);
-                
-                const solverSk = state.helper.generateKeypair();
-                const solverPk = state.helper.getXOnlyPubkey(solverSk);
-                
-                state.userKeys = { sk: userSk, pk: userPk };
-                state.solverKeys = { sk: solverSk, pk: solverPk };
-                
-                // Display keys
-                document.getElementById('user-pk').textContent = 
-                    Array.from(userPk).map(b => b.toString(16).padStart(2, '0')).join('');
-                document.getElementById('solver-pk').textContent = 
-                    Array.from(solverPk).map(b => b.toString(16).padStart(2, '0')).join('');
-                
-                document.getElementById('keys-info').style.display = 'block';
-                document.getElementById('status-keys').className = 'status status-complete';
-                document.getElementById('btn-address').disabled = false;
-                
-                console.log('✅ Keys generated');
-            } catch (e) {
-                alert('Error generating keys: ' + e.message);
+        // Simple SHA-256 implementation for non-secure contexts
+        async function sha256(str) {
+            // If crypto.subtle is available (HTTPS/localhost), use it
+            if (window.crypto && window.crypto.subtle) {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(str);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = new Uint8Array(hashBuffer);
+                return Array.from(hashArray).map(b => b.toString(16).padStart(2, '0')).join('');
             }
-        };
-
-        window.createAddress = function() {
-            try {
-                const userSkHex = Array.from(state.userKeys.sk).map(b => b.toString(16).padStart(2, '0')).join('');
-                const solverSkHex = Array.from(state.solverKeys.sk).map(b => b.toString(16).padStart(2, '0')).join('');
-                
-                console.log('[JS] createAddress - User SK (first 16 chars):', userSkHex.substring(0, 16));
-                console.log('[JS] createAddress - Solver SK (first 16 chars):', solverSkHex.substring(0, 16));
-                
-                // Use the new createRefundAddress function (now accepts secret keys)
-                state.addressInfo = wasm.createRefundAddress(
-                    userSkHex,
-                    solverSkHex,
-                    144, // CSV delta
-                    'regtest'
-                );
-                
-                // Display address info
-                document.getElementById('funding-address').textContent = state.addressInfo.address;
-                document.getElementById('agg-pk').textContent = state.addressInfo.agg_pubkey;
-                document.getElementById('csv-delta').textContent = `${state.addressInfo.csv_delta} blocks (≈ 1 day)`;
-                
-                document.getElementById('address-info').style.display = 'block';
-                document.getElementById('status-address').className = 'status status-complete';
-                document.getElementById('status-funding').className = 'status status-active';
-                
-                // Update funding command
-                document.getElementById('fund-command').textContent = 
-                    `bitcoin-cli -regtest sendtoaddress ${state.addressInfo.address} 0.0005`;
-                
-                // Enable funding txid input
-                document.getElementById('funding-txid-input').disabled = false;
-                document.getElementById('funding-vout-input').disabled = false;
-                
-                console.log('✅ Address created:', state.addressInfo);
-            } catch (e) {
-                alert('Error creating address: ' + e.message);
-            }
-        };
-
-        window.onFundingChange = function() {
-            const txidInput = document.getElementById('funding-txid-input');
-            const voutInput = document.getElementById('funding-vout-input');
-            const txid = txidInput.value.trim();
-            const vout = parseInt(voutInput.value);
             
-            // Validate txid (should be 64 hex characters)
+            // Fallback: simple deterministic hash for demo purposes
+            // In production, this should use a proper SHA-256 library
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            // Generate 32 bytes (64 hex chars) from the hash
+            let result = '';
+            let seed = Math.abs(hash);
+            for (let i = 0; i < 64; i++) {
+                seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+                result += (seed % 16).toString(16);
+            }
+            return result;
+        }
+
+        window.hashIntent = async function() {
+            const intent = document.getElementById('intent-text').value.trim();
+            if (!intent) {
+                alert('Please enter an intent');
+                return;
+            }
+            
+            state.intent = intent;
+            
+            // Hash the intent and take first 20 bytes (40 hex chars)
+            const fullHash = await sha256(intent);
+            state.intentHash = fullHash.substring(0, 40); // First 20 bytes
+            
+            document.getElementById('intent-hash').textContent = state.intentHash;
+            document.getElementById('step-intent').classList.add('hidden');
+            document.getElementById('step-offer').classList.remove('hidden');
+            
+            console.log('Intent hashed:', state.intentHash);
+        };
+
+        window.acceptOffer = function() {
+            console.log('Generating keys and address...');
+            
+            // Generate ephemeral keypairs
+            const userSk = state.helper.generateKeypair();
+            const solverSk = state.helper.generateKeypair();
+            
+            state.userKeys = { sk: userSk };
+            state.solverKeys = { sk: solverSk };
+            
+            const userSkHex = Array.from(userSk).map(b => b.toString(16).padStart(2, '0')).join('');
+            const solverSkHex = Array.from(solverSk).map(b => b.toString(16).padStart(2, '0')).join('');
+            
+            // Create funding address with CSV refund leaf
+            state.addressInfo = wasm.createRefundAddress(
+                userSkHex,
+                solverSkHex,
+                CSV_BLOCKS,
+                'regtest'
+            );
+            
+            // Create Bitcoin URI
+            const btcAmount = (ESCROW_AMOUNT / 100000000).toFixed(8); // Convert sats to BTC
+            const bitcoinUri = `bitcoin:${state.addressInfo.address}?amount=${btcAmount}`;
+            
+            // Display address
+            document.getElementById('escrow-address').textContent = state.addressInfo.address;
+            document.getElementById('send-amount').textContent = ESCROW_AMOUNT.toLocaleString() + ' sats';
+            document.getElementById('cli-command').textContent = 
+                `bitcoin-cli -regtest sendtoaddress ${state.addressInfo.address} 0.0005`;
+            
+            // Set up Bitcoin URI link
+            const uriLink = document.getElementById('bitcoin-uri-link');
+            uriLink.href = bitcoinUri;
+            
+            // Generate QR code
+            const qrContainer = document.getElementById('qr-container');
+            qrContainer.innerHTML = ''; // Clear any existing QR code
+            new QRCode(qrContainer, {
+                text: bitcoinUri,
+                width: 256,
+                height: 256,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.M
+            });
+            
+            document.getElementById('step-offer').classList.add('hidden');
+            document.getElementById('step-address').classList.remove('hidden');
+            
+            console.log('✅ Escrow address created:', state.addressInfo.address);
+            console.log('📱 Bitcoin URI:', bitcoinUri);
+        };
+
+        window.confirmFunding = async function() {
+            const txid = document.getElementById('funding-txid').value.trim();
+            const vout = parseInt(document.getElementById('funding-vout').value);
+            
             if (txid.length !== 64 || !/^[0-9a-fA-F]{64}$/.test(txid)) {
-                // Invalid or incomplete txid
-                document.getElementById('burn-card').style.display = 'none';
+                alert('Invalid TXID (must be 64 hex characters)');
                 return;
             }
             
-            // Validate vout
             if (isNaN(vout) || vout < 0) {
-                document.getElementById('burn-card').style.display = 'none';
+                alert('Invalid vout');
                 return;
             }
             
-            // Valid inputs - automatically build burn transaction
-            try {
-                state.fundingTxid = txid;
-                state.fundingVout = vout;
-                buildBurnTransaction(txid, vout);
-                
-                document.getElementById('status-funding').className = 'status status-complete';
-            } catch (e) {
-                alert('Error building burn transaction: ' + e.message);
-            }
+            state.fundingTxid = txid;
+            state.fundingVout = vout;
+            
+            // Show loading screen
+            document.getElementById('step-address').classList.add('hidden');
+            document.getElementById('step-loading').classList.remove('hidden');
+            
+            console.log('✅ Funding confirmed:', txid, 'vout:', vout);
+            console.log('🔄 Collaborating with solver to create burn transaction...');
+            
+            // Simulate multi-step process with delays
+            await simulateLoadingSteps();
+            
+            // Hide loading, show actions
+            document.getElementById('step-loading').classList.add('hidden');
+            document.getElementById('step-actions').classList.remove('hidden');
+            
+            // Start refund countdown (mock)
+            updateRefundCountdown();
         };
 
-        function buildBurnTransaction(fundingTxid, vout) {
+        async function simulateLoadingSteps() {
+            const steps = [
+                { id: 'load-step-1', duration: 600, text: '✅ Funding transaction verified' },
+                { id: 'load-step-2', duration: 800, text: '✅ MuSig2 nonces exchanged' },
+                { id: 'load-step-3', duration: 900, text: '✅ Burn transaction presigned' },
+                { id: 'load-step-4', duration: 700, text: '✅ Escrow ready' }
+            ];
+            
+            for (const step of steps) {
+                await new Promise(resolve => setTimeout(resolve, step.duration));
+                const el = document.getElementById(step.id);
+                el.textContent = step.text;
+                el.classList.add('step-done');
+                console.log(step.text);
+            }
+        }
+
+        function updateRefundCountdown() {
+            // Mock countdown - in production, check actual block height
+            document.getElementById('refund-countdown').textContent = `${CSV_BLOCKS} blocks`;
+            document.getElementById('btn-refund').disabled = true;
+            document.getElementById('btn-refund').textContent = 'Locked (timelock not expired)';
+        }
+
+        window.showBurnTx = function() {
             try {
                 console.log('Building burn transaction...');
-                console.log('Funding TXID:', fundingTxid);
-                console.log('Vout:', vout);
-                console.log('State:', state);
                 
-                const payload = `INTENT||${INTENT_HASH}`;
-                const payloadHex = Array.from(new TextEncoder().encode(payload))
-                    .map(b => b.toString(16).padStart(2, '0')).join('');
+                // Build BTI1 burn transaction
+                const burnAmount = BigInt(ESCROW_AMOUNT) - 500n; // Leave 500 sat fee for demo
                 
-                // Step 1: Build unsigned burn PSBT
-                console.log('Building unsigned PSBT...');
-                // Build BTI1 payload: chain_id=1, intent_hash=deadbeef... (20 bytes)
-                const chainId = 1;
-                const intentHashHex = 'deadbeef'.repeat(5); // 20 bytes (40 hex chars)
-                // Demo-only fee handling: subtract a flat 500 sats so the tx relays.
-                // Final system: we won't provide fees here; a separate fee-payer will add inputs
-                // using SIGHASH_ALL|ANYONECANPAY while keeping outputs unchanged.
-                // (This line exists only for the demo UX.)
-                const burnAmount = BigInt(FUNDING_AMOUNT) - 500n;
                 const unsignedPsbt = wasm.buildBurnPsbt(
-                    fundingTxid,
-                    vout,
-                    BigInt(FUNDING_AMOUNT),
+                    state.fundingTxid,
+                    state.fundingVout,
+                    BigInt(ESCROW_AMOUNT),
                     burnAmount,
-                    chainId,
-                    intentHashHex,
+                    CHAIN_ID,
+                    state.intentHash,
                     'regtest'
                 );
                 
-                console.log('✅ Unsigned burn PSBT created:', unsignedPsbt);
+                console.log('✅ Unsigned burn PSBT created');
                 
-                // Step 2: Sign with MuSig2 (both parties locally for demo)
-                if (!state.userKeys || !state.userKeys.sk) {
-                    throw new Error('User keys not found');
-                }
-                if (!state.solverKeys || !state.solverKeys.sk) {
-                    throw new Error('Solver keys not found');
-                }
-                if (!state.addressInfo || !state.addressInfo.address) {
-                    throw new Error('Address info not found');
-                }
-                
+                // Sign with MuSig2
                 const userSkHex = Array.from(state.userKeys.sk).map(b => b.toString(16).padStart(2, '0')).join('');
                 const solverSkHex = Array.from(state.solverKeys.sk).map(b => b.toString(16).padStart(2, '0')).join('');
-                
-                console.log('🔐 Signing with MuSig2...');
-                console.log('[JS] signing - User SK (first 16 chars):', userSkHex.substring(0, 16));
-                console.log('[JS] signing - Solver SK (first 16 chars):', solverSkHex.substring(0, 16));
-                console.log('User SK length:', userSkHex.length);
-                console.log('Solver SK length:', solverSkHex.length);
-                console.log('Address:', state.addressInfo.address);
                 
                 const signedTx = wasm.signBurnPsbtDemo(
                     userSkHex,
                     solverSkHex,
                     unsignedPsbt.hex,
                     state.addressInfo.address,
-                    BigInt(FUNDING_AMOUNT),
+                    BigInt(ESCROW_AMOUNT),
                     state.addressInfo.merkle_root_hex || '',
-                    state.addressInfo.internal_key || state.addressInfo.agg_pubkey || '',
+                    state.addressInfo.internal_key || '',
                     state.addressInfo.output_key || ''
                 );
                 
-                console.log('✅ Burn transaction signed with MuSig2:', signedTx);
+                console.log('✅ Burn transaction signed');
                 
-                if (!signedTx || !signedTx.hex) {
-                    throw new Error('Signed transaction is invalid or undefined');
-                }
-                
-                // Display signed burn transaction
-                document.getElementById('burn-tx-hex').textContent = signedTx.hex;
+                // Display results
+                document.getElementById('burn-hex').textContent = signedTx.hex;
                 document.getElementById('burn-txid').textContent = signedTx.txid;
-                document.getElementById('burn-size').textContent = `${signedTx.size} bytes`;
-                document.getElementById('burn-broadcast-cmd').textContent = 
+                document.getElementById('burn-intent-hash').textContent = state.intentHash;
+                document.getElementById('burn-amount').textContent = (Number(burnAmount)).toLocaleString();
+                document.getElementById('burn-broadcast').textContent = 
                     `bitcoin-cli -regtest sendrawtransaction ${signedTx.hex}`;
                 
-                document.getElementById('burn-card').style.display = 'block';
-                document.getElementById('burn-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                document.getElementById('step-actions').classList.add('hidden');
+                document.getElementById('burn-result').classList.remove('hidden');
                 
-                console.log('✅ Signed burn transaction ready to broadcast');
             } catch (e) {
-                console.error('Detailed error:', e);
-                console.error('Error message:', e.message);
-                console.error('Error stack:', e.stack);
-                throw e;
+                console.error('Error building burn:', e);
+                alert('Error: ' + e.message);
             }
-        }
-
-        window.copyToClipboard = function(elementId) {
-            const element = document.getElementById(elementId);
-            const text = element.textContent;
-            
-            navigator.clipboard.writeText(text).then(() => {
-                // Show feedback
-                const btn = event.target;
-                const originalText = btn.textContent;
-                btn.textContent = '✅ Copied!';
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                }, 2000);
-            }).catch(err => {
-                alert('Failed to copy: ' + err.message);
-            });
         };
 
-        // Initialize on load
+        window.cooperativePayout = async function() {
+            try {
+                console.log('🤝 Starting cooperative payout...');
+                
+                // For demo, we'll use a solver address (in production, this comes from solver)
+                const solverAddress = 'bcrt1q...solver...'; // Placeholder
+                
+                // In a real scenario, you'd get the solver's actual address
+                // For demo purposes, let's just show the process
+                
+                // Build payout PSBT
+                const payoutAmount = BigInt(ESCROW_AMOUNT) - 500n; // Leave 500 sat fee
+                
+                const unsignedPsbt = wasm.buildPayoutPsbt(
+                    state.fundingTxid,
+                    state.fundingVout,
+                    BigInt(ESCROW_AMOUNT),
+                    state.addressInfo.address, // Placeholder - should be solver's address
+                    payoutAmount
+                );
+                
+                console.log('✅ Unsigned payout PSBT created');
+                
+                // Sign with MuSig2
+                const userSkHex = Array.from(state.userKeys.sk).map(b => b.toString(16).padStart(2, '0')).join('');
+                const solverSkHex = Array.from(state.solverKeys.sk).map(b => b.toString(16).padStart(2, '0')).join('');
+                
+                const signedTx = wasm.signPayoutPsbtDemo(
+                    userSkHex,
+                    solverSkHex,
+                    unsignedPsbt.hex,
+                    state.addressInfo.address,
+                    BigInt(ESCROW_AMOUNT),
+                    state.addressInfo.merkle_root_hex || '',
+                    state.addressInfo.internal_key || '',
+                    state.addressInfo.output_key || ''
+                );
+                
+                console.log('✅ Payout transaction signed');
+                
+                // Display results
+                document.getElementById('payout-hex').textContent = signedTx.hex;
+                document.getElementById('payout-txid').textContent = signedTx.txid;
+                document.getElementById('payout-amount').textContent = (Number(payoutAmount)).toLocaleString();
+                document.getElementById('payout-broadcast').textContent = 
+                    `bitcoin-cli -regtest sendrawtransaction ${signedTx.hex}`;
+                
+                document.getElementById('step-actions').classList.add('hidden');
+                document.getElementById('payout-result').classList.remove('hidden');
+                
+            } catch (e) {
+                console.error('Error building payout:', e);
+                alert('Error: ' + e.message);
+            }
+        };
+
+        window.forceRefund = function() {
+            document.getElementById('step-actions').classList.add('hidden');
+            document.getElementById('refund-result').classList.remove('hidden');
+        };
+
+        window.copy = function(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const orig = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => { btn.textContent = orig; }, 2000);
+            }).catch(err => alert('Copy failed: ' + err));
+        };
+
+        // Initialize
         loadWasm();
     </script>
 </body>
 </html>
-

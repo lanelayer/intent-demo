@@ -744,6 +744,262 @@ pub fn wasm_sign_burn_psbt_demo(
     Ok(serde_wasm_bindgen::to_value(&info)?)
 }
 
+/// Sign a payout PSBT with MuSig2 (demo version with both keys)
+/// This is the "happy path" - cooperative payout to solver
+#[wasm_bindgen(js_name = signPayoutPsbtDemo)]
+pub fn wasm_sign_payout_psbt_demo(
+    user_secret_hex: &str,
+    solver_secret_hex: &str,
+    psbt_hex: &str,
+    funding_address: &str,
+    funding_value_sats: u64,
+    merkle_root_hex: &str,
+    expected_internal_key_hex: &str,
+    expected_output_key_hex: &str,
+) -> Result<JsValue, JsValue> {
+    use bitcoin::psbt::Psbt;
+    use bitcoin::consensus::encode::deserialize;
+    use secp256k1::{Keypair, SecretKey};
+    use secp256k1::musig::{AggregatedNonce, Session, SessionSecretRand};
+    
+    let secp = Secp256k1::new();
+    
+    web_sys::console::log_1(&JsValue::from_str("🤝 Starting cooperative payout signing..."));
+    
+    // Parse secret keys
+    let user_sk_bytes = hex::decode(user_secret_hex)
+        .map_err(|e| JsValue::from_str(&format!("Invalid user secret: {}", e)))?;
+    let solver_sk_bytes = hex::decode(solver_secret_hex)
+        .map_err(|e| JsValue::from_str(&format!("Invalid solver secret: {}", e)))?;
+    
+    if user_sk_bytes.len() != 32 || solver_sk_bytes.len() != 32 {
+        return Err(JsValue::from_str("Secret keys must be 32 bytes"));
+    }
+    
+    let user_sk_arr: [u8; 32] = user_sk_bytes.as_slice().try_into().unwrap();
+    let solver_sk_arr: [u8; 32] = solver_sk_bytes.as_slice().try_into().unwrap();
+    
+    let user_sk = SecretKey::from_secret_bytes(user_sk_arr)
+        .map_err(|e| JsValue::from_str(&format!("Invalid user secret key: {:?}", e)))?;
+    let solver_sk = SecretKey::from_secret_bytes(solver_sk_arr)
+        .map_err(|e| JsValue::from_str(&format!("Invalid solver secret key: {:?}", e)))?;
+    
+    let user_kp = Keypair::from_secret_key(&user_sk);
+    let solver_kp = Keypair::from_secret_key(&solver_sk);
+    
+    // Aggregate keys
+    let user_pk = PublicKey::from_keypair(&user_kp);
+    let solver_pk = PublicKey::from_keypair(&solver_kp);
+    
+    let mut key_agg_cache = aggregate_pubkeys(&[user_pk, solver_pk]);
+    
+    // Log initial aggregated key for debugging
+    let initial_agg_pk_hex = hex::encode(key_agg_cache.agg_pk().serialize());
+    web_sys::console::log_1(&JsValue::from_str(&format!(
+        "Initial agg_pk (internal_key): {}",
+        initial_agg_pk_hex
+    )));
+    
+    // SANITY CHECK: Verify our aggregated key matches the expected internal key
+    if !expected_internal_key_hex.is_empty() && initial_agg_pk_hex != expected_internal_key_hex {
+        let error_msg = format!(
+            "SANITY CHECK FAILED: Internal key mismatch!\n\
+             Expected internal_key: {}\n\
+             Our agg_pk:            {}\n\
+             The keys were aggregated differently!",
+            expected_internal_key_hex,
+            initial_agg_pk_hex
+        );
+        web_sys::console::error_1(&JsValue::from_str(&error_msg));
+        return Err(JsValue::from_str(&error_msg));
+    }
+    
+    // Apply taproot tweak if merkle root is provided
+    if !merkle_root_hex.is_empty() {
+        use bitcoin::hashes::{sha256, Hash, HashEngine};
+        use secp256k1::Scalar;
+        
+        let merkle_bytes = hex::decode(merkle_root_hex)
+            .map_err(|e| JsValue::from_str(&format!("Invalid merkle root hex: {}", e)))?;
+        if merkle_bytes.len() == 32 {
+            web_sys::console::log_1(&JsValue::from_str(&format!(
+                "Applying taproot tweak with merkle root: {}",
+                merkle_root_hex
+            )));
+            
+            // Compute taproot tweak: t = H_taptweak(P || merkle_root)
+            let mut eng = sha256::Hash::engine();
+            let tag = b"TapTweak";
+            let tag_hash = sha256::Hash::hash(tag);
+            eng.input(tag_hash.as_ref());
+            eng.input(tag_hash.as_ref());
+            eng.input(&key_agg_cache.agg_pk().serialize());
+            eng.input(&merkle_bytes);
+            let tweak_hash = sha256::Hash::from_engine(eng);
+            let tweak_scalar = Scalar::from_be_bytes(tweak_hash.to_byte_array())
+                .map_err(|_| JsValue::from_str("Invalid tweak scalar"))?;
+            
+            // Apply tweak to the KeyAggCache BEFORE nonce generation
+            let _tweaked_pk = key_agg_cache.pubkey_xonly_tweak_add(&tweak_scalar)
+                .map_err(|e| JsValue::from_str(&format!("Failed to apply taproot tweak: {:?}", e)))?;
+            
+            web_sys::console::log_1(&JsValue::from_str(&format!(
+                "Applied tweak to KeyAggCache, new agg_pk: {}",
+                hex::encode(key_agg_cache.agg_pk().serialize())
+            )));
+            
+            // SANITY CHECK: Verify the tweaked key matches the expected output key
+            let tweaked_key_hex = hex::encode(key_agg_cache.agg_pk().serialize());
+            if !expected_output_key_hex.is_empty() && tweaked_key_hex != expected_output_key_hex {
+                let error_msg = format!(
+                    "SANITY CHECK FAILED: Tweaked key mismatch!\n\
+                     Expected output_key: {}\n\
+                     Our tweaked agg_pk:  {}\n\
+                     This means the signature will be invalid on-chain!",
+                    expected_output_key_hex,
+                    tweaked_key_hex
+                );
+                web_sys::console::error_1(&JsValue::from_str(&error_msg));
+                return Err(JsValue::from_str(&error_msg));
+            }
+            
+            web_sys::console::log_1(&JsValue::from_str("✅ SANITY CHECK: Tweaked key matches output_key"));
+        }
+    }
+    
+    // Parse funding address
+    let addr = funding_address.parse::<bitcoin::Address<_>>()
+        .map_err(|e| JsValue::from_str(&format!("Invalid address: {}", e)))?
+        .assume_checked();
+    
+    let prevout = bitcoin::TxOut {
+        value: Amount::from_sat(funding_value_sats),
+        script_pubkey: addr.script_pubkey(),
+    };
+    
+    // Parse PSBT hex as a transaction
+    let psbt_bytes = hex::decode(psbt_hex)
+        .map_err(|e| JsValue::from_str(&format!("Invalid psbt hex: {}", e)))?;
+    let tx: bitcoin::Transaction = deserialize(&psbt_bytes)
+        .map_err(|e| JsValue::from_str(&format!("Invalid transaction: {:?}", e)))?;
+    
+    let mut psbt = Psbt::from_unsigned_tx(tx)
+        .map_err(|e| JsValue::from_str(&format!("PSBT error: {:?}", e)))?;
+    
+    // Add witness_utxo for sighash computation
+    psbt.inputs[0].witness_utxo = Some(prevout.clone());
+    
+    // Compute sighash (use Default/ALL for standard payout)
+    let sighash = crate::sighash::keyspend_sighash(
+        &psbt,
+        &prevout,
+        bitcoin::sighash::TapSighashType::Default,
+    ).map_err(|e| JsValue::from_str(&e))?;
+    
+    web_sys::console::log_1(&JsValue::from_str(&format!(
+        "Sighash (SIGHASH_ALL): {}",
+        hex::encode(&sighash)
+    )));
+    
+    // MuSig2 signing (both parties locally for demo)
+    let mut rng = secp256k1::rand::rng();
+    
+    // User nonce
+    let user_session_rand = SessionSecretRand::from_rng(&mut rng);
+    let (user_sec_nonce, user_pub_nonce) = key_agg_cache.nonce_gen(
+        user_session_rand,
+        user_kp.public_key(),
+        &sighash,
+        None,
+    );
+    
+    // Solver nonce
+    let solver_session_rand = SessionSecretRand::from_rng(&mut rng);
+    let (solver_sec_nonce, solver_pub_nonce) = key_agg_cache.nonce_gen(
+        solver_session_rand,
+        solver_kp.public_key(),
+        &sighash,
+        None,
+    );
+    
+    // Aggregate nonces
+    let agg_nonce = AggregatedNonce::new(&[&user_pub_nonce, &solver_pub_nonce]);
+    
+    // Create session
+    let session = Session::new(&key_agg_cache, agg_nonce, &sighash);
+    
+    // Partial signatures
+    let user_partial = session.partial_sign(user_sec_nonce, &user_kp, &key_agg_cache);
+    let solver_partial = session.partial_sign(solver_sec_nonce, &solver_kp, &key_agg_cache);
+    
+    // Aggregate
+    let agg_sig = session.partial_sig_agg(&[&user_partial, &solver_partial]);
+    
+    web_sys::console::log_1(&JsValue::from_str(&format!(
+        "Signing with tweaked agg_pk: {}",
+        hex::encode(key_agg_cache.agg_pk().serialize())
+    )));
+    
+    // Verify and extract final signature
+    let final_sig = agg_sig.verify(&key_agg_cache.agg_pk(), &sighash)
+        .map_err(|e| JsValue::from_str(&format!("Signature verification failed: {:?}", e)))?;
+    
+    let sig_bytes: [u8; 64] = *final_sig.as_ref();
+    
+    web_sys::console::log_1(&JsValue::from_str(&format!(
+        "✅ Signature created: {}",
+        hex::encode(&sig_bytes[..32])
+    )));
+    
+    // Attach signature (64 bytes, no sighash byte for SIGHASH_DEFAULT)
+    psbt.inputs[0].final_script_witness = Some(bitcoin::Witness::from_slice(&[&sig_bytes]));
+    
+    // Extract final transaction
+    let signed_tx = psbt.extract_tx()
+        .map_err(|e| JsValue::from_str(&format!("Extract tx error: {:?}", e)))?;
+    
+    // Sanity check: verify witness is attached
+    if signed_tx.input[0].witness.is_empty() {
+        return Err(JsValue::from_str("SANITY CHECK FAILED: Witness is empty after signing!"));
+    }
+    
+    if signed_tx.input[0].witness.len() != 1 {
+        return Err(JsValue::from_str(&format!(
+            "SANITY CHECK FAILED: Expected 1 witness item, got {}",
+            signed_tx.input[0].witness.len()
+        )));
+    }
+    
+    let witness_sig = &signed_tx.input[0].witness[0];
+    if witness_sig.len() != 64 {
+        return Err(JsValue::from_str(&format!(
+            "SANITY CHECK FAILED: Witness signature should be 64 bytes (SIGHASH_DEFAULT), got {}",
+            witness_sig.len()
+        )));
+    }
+    
+    web_sys::console::log_1(&JsValue::from_str(&format!(
+        "✅ SANITY CHECK PASSED: Witness has 64-byte signature (SIGHASH_DEFAULT)"
+    )));
+    
+    let tx_hex = hex::encode(serialize(&signed_tx));
+    let tx_txid = signed_tx.compute_txid();
+    
+    web_sys::console::log_1(&JsValue::from_str(&format!(
+        "✅ Final payout TX: {} ({} bytes)",
+        tx_txid,
+        tx_hex.len() / 2
+    )));
+    
+    let info = TxInfo {
+        hex: tx_hex.clone(),
+        txid: tx_txid.to_string(),
+        size: tx_hex.len() / 2,
+    };
+    
+    Ok(serde_wasm_bindgen::to_value(&info)?)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
