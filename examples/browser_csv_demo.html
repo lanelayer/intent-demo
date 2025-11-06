@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Escrow Demo - P2TR + CSV Refund</title>
+    <title>Swap BTC → LaneBTC</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -235,55 +235,89 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔐 Trustless Escrow Demo</h1>
+            <h1>⚡ Swap BTC → LaneBTC</h1>
             <p class="subtitle">
-                Secure Bitcoin escrow with unilateral refund • Network: <strong>Regtest</strong>
+                Trustless Bitcoin bridge to LaneLayer Core Layer
             </p>
         </div>
 
-        <!-- Step 1: Enter Intent -->
-        <div class="card" id="step-intent">
-            <h2>1. Describe Your Intent</h2>
-            <p style="color: #666; margin-bottom: 15px;">
-                What service or delivery are you requesting?
-            </p>
-            <textarea id="intent-text" placeholder="e.g., Deliver 1 pizza to 123 Main St"></textarea>
-            <button class="btn" style="margin-top: 15px;" onclick="hashIntent()">Continue →</button>
-        </div>
-
-        <!-- Step 2: Intent Hash & Solver Offer -->
-        <div class="card hidden" id="step-offer">
-            <h2>2. Intent Commitment</h2>
-            <div class="info-box">
-                <div class="info-label">Intent Hash (20 bytes)</div>
-                <div class="info-value" id="intent-hash"></div>
-            </div>
+        <!-- Step 1: Swap Input + Quotes -->
+        <div class="card" id="step-swap">
+            <h2>Swap</h2>
             
-            <div class="offer-card">
-                <h3>📋 Solver Offer</h3>
-                <div class="offer-details">
-                    <strong>Solver:</strong> solver.example.com<br>
-                    <strong>Delivery Time:</strong> ~2 hours<br>
-                    <strong>Escrow Amount:</strong> <span id="offer-amount">50,000</span> sats<br>
-                    <strong>Refund Timelock:</strong> 144 blocks (~1 day)<br>
-                    <strong>Chain:</strong> Ethereum (chain_id = 1)
+            <!-- From -->
+            <div style="margin-bottom: 20px;">
+                <label>From</label>
+                <div style="background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="color: #6b7280; font-size: 14px;">You pay</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-weight: 600; font-size: 16px;">⚡ BTC</span>
+                        </div>
+                    </div>
+                    <input type="number" id="btc-amount" placeholder="0.0005" step="0.00001" value="0.0005"
+                           style="font-size: 32px; font-weight: 600; border: none; background: transparent; padding: 0; width: 100%;"
+                           oninput="updateQuotes()">
+                    <div style="color: #9ca3af; font-size: 14px; margin-top: 8px;">
+                        Network: <strong>Bitcoin Regtest</strong>
+                    </div>
                 </div>
-                <p style="margin-top: 15px; font-size: 14px; color: #475569;">
-                    The solver will complete your intent. You can refund unilaterally after the timelock if unsatisfied.
-                </p>
             </div>
-            
-            <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success" onclick="acceptOffer()">✓ Accept Offer</button>
-                <button class="btn" style="background: #6b7280;" onclick="location.reload()">✗ Decline</button>
+
+            <!-- Swap Arrow -->
+            <div style="text-align: center; margin: -10px 0;">
+                <div style="background: white; border: 2px solid #e5e7eb; border-radius: 50%; width: 40px; height: 40px; 
+                            display: inline-flex; align-items: center; justify-content: center; cursor: pointer;"
+                     onclick="alert('Reverse swap not yet implemented')">
+                    <span style="font-size: 20px;">⬇️</span>
+                </div>
+            </div>
+
+            <!-- To -->
+            <div style="margin-top: 20px; margin-bottom: 20px;">
+                <label>To (Best Rate)</label>
+                <div style="background: #f0f9ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="color: #6b7280; font-size: 14px;">You receive</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-weight: 600; font-size: 16px;">🌊 LaneBTC</span>
+                        </div>
+                    </div>
+                    <div style="font-size: 32px; font-weight: 600; color: #1e40af;" id="lanebtc-amount">0.00045</div>
+                    <div style="color: #3b82f6; font-size: 14px; margin-top: 8px;">
+                        Destination: <strong>LaneLayer Core Layer</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Solver Quote -->
+            <div style="margin-top: 30px;">
+                <h3 style="font-size: 16px; color: #374151; margin-bottom: 15px;">Solver</h3>
+                <div id="quotes-list">
+                    <!-- Quote will be inserted here -->
+                </div>
             </div>
         </div>
 
         <!-- Step 3: Escrow Address -->
         <div class="card hidden" id="step-address">
-            <h2>3. Send Bitcoin to Escrow Address</h2>
+            <h2>Fund Escrow</h2>
+            
+            <div style="background: #f0f9ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Solver</div>
+                        <div style="font-weight: 600; color: #1e40af;" id="solver-name">-</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">You'll receive</div>
+                        <div style="font-weight: 600; color: #1e40af;"><span id="lanebtc-receive">-</span> LaneBTC</div>
+                    </div>
+                </div>
+            </div>
+
             <p style="color: #666; margin-bottom: 15px;">
-                Send <strong id="send-amount">50,000 sats</strong> to the address below
+                Send <strong id="send-amount">- BTC</strong> to the escrow address below
             </p>
             
             <div style="text-align: center; margin: 20px 0;">
@@ -292,8 +326,21 @@
                 </a>
             </div>
             
-            <div class="qr-code" id="qr-container">
-                <!-- QR code will be generated here -->
+            <!-- QR Code + Waiting Spinner Side by Side -->
+            <div style="display: flex; align-items: center; justify-content: center; gap: 30px; margin: 30px 0; flex-wrap: wrap;">
+                <!-- QR Code -->
+                <div class="qr-code" id="qr-container" style="margin: 0;">
+                    <!-- QR code will be generated here -->
+                </div>
+                
+                <!-- Waiting Indicator -->
+                <div style="text-align: center;">
+                    <div class="spinner"></div>
+                    <div class="loading-text" style="margin-top: 15px;">Waiting for deposit...</div>
+                    <div style="color: #6b7280; font-size: 14px; margin-top: 10px; max-width: 200px;">
+                        Watching Bitcoin network for incoming transaction
+                    </div>
+                </div>
             </div>
             
             <div class="info-box">
@@ -306,16 +353,6 @@
                     💻 Bitcoin CLI Command
                 </div>
                 <code id="cli-command" style="background: white; padding: 8px; display: block; border-radius: 4px; word-break: break-all;"></code>
-            </div>
-            
-            <div style="margin-top: 20px;">
-                <label>Enter Funding Transaction ID</label>
-                <input type="text" id="funding-txid" placeholder="Paste TXID here after sending..." />
-                
-                <label style="margin-top: 15px;">Output Index (vout)</label>
-                <input type="number" id="funding-vout" value="1" min="0" max="10" style="width: 150px;" />
-                
-                <button class="btn" style="margin-top: 15px;" onclick="confirmFunding()">Confirm Funding →</button>
             </div>
         </div>
 
@@ -332,11 +369,53 @@
             </div>
         </div>
 
-        <!-- Step 4: Escrow Active - Action Options -->
+        <!-- Step 4: Waiting for Solver -->
+        <div class="card hidden" id="step-waiting">
+            <h2>Waiting for Solver</h2>
+            <div class="spinner"></div>
+            <div class="loading-text">Solver is fulfilling your swap...</div>
+            <div style="text-align: center; color: #666; font-size: 14px; margin-top: 10px;">
+                This usually takes a few minutes
+            </div>
+        </div>
+
+        <!-- Step 5: Delivery Confirmation -->
+        <div class="card hidden" id="step-delivery">
+            <h2>Delivery Complete</h2>
+            
+            <div style="background: #f0fdf4; border: 2px solid #10b981; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">✅</div>
+                <div style="font-size: 18px; font-weight: 600; color: #065f46; margin-bottom: 8px;">
+                    LaneBTC Received!
+                </div>
+                <div style="font-size: 32px; font-weight: 700; color: #10b981; margin: 10px 0;" id="delivered-amount">
+                    0.00040 LaneBTC
+                </div>
+                <div style="font-size: 14px; color: #059669;">
+                    has been registered in your LaneLayer account
+                </div>
+            </div>
+
+            <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 4px; margin: 20px 0;">
+                <div style="font-weight: 600; color: #92400e; margin-bottom: 8px;">
+                    ⚠️ Important: Confirm Delivery
+                </div>
+                <div style="color: #78350f; font-size: 14px;">
+                    Do you agree that the solver has successfully delivered <strong id="delivered-amount-2">0.00040 LaneBTC</strong> to your LaneLayer account?
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+                <button class="btn btn-success" onclick="completeDelivery()">✓ Yes, Complete Delivery</button>
+                <button class="btn btn-danger" onclick="showDispute()">✗ No, Dispute</button>
+            </div>
+        </div>
+
+        <!-- Step 6: Escrow Active - Action Options -->
         <div class="card hidden" id="step-actions">
-            <h2>4. Escrow Active - Choose Action</h2>
+            <h2>Escrow Active - Advanced Actions</h2>
             <p style="color: #666; margin-bottom: 20px;">
-                Your funds are held in escrow. Choose an action below:
+                Your funds are held in escrow. Additional actions:
             </p>
             
             <div class="action-grid">
@@ -391,9 +470,9 @@
                 <div class="info-label">Details</div>
                 <div class="info-value">
                     Format: BTI1 (Burn-to-Intent v1)<br>
-                    Chain ID: 1 (Ethereum)<br>
                     Intent Hash: <span id="burn-intent-hash"></span><br>
                     Burn Amount: <span id="burn-amount"></span> sats<br>
+                    Destination: LaneLayer Core Layer<br>
                     Sighash: ALL|ANYONECANPAY (fee-payer can add inputs)
                 </div>
             </div>
@@ -472,14 +551,16 @@
     <script type="module">
         import init, * as wasm from './wasm_helper/wasm_helper.js';
 
-        const CHAIN_ID = 1; // Ethereum
-        const CSV_BLOCKS = 144; // ~1 day refund timelock
-        const ESCROW_AMOUNT = 50000; // sats
+        const CHAIN_ID = 1; // LaneLayer uses chain_id for BTI1 format on-chain
 
         let state = {
             helper: null,
             intent: null,
             intentHash: null,
+            swapAmount: null,
+            escrowAmountSats: null,
+            quotes: [],
+            selectedQuote: null,
             userKeys: null,
             solverKeys: null,
             addressInfo: null,
@@ -528,27 +609,110 @@
             return result;
         }
 
-        window.hashIntent = async function() {
-            const intent = document.getElementById('intent-text').value.trim();
-            if (!intent) {
-                alert('Please enter an intent');
+        // Update LaneBTC amount and quotes as user types
+        window.updateQuotes = function() {
+            const btcAmount = parseFloat(document.getElementById('btc-amount').value) || 0;
+            
+            if (btcAmount <= 0) {
+                document.getElementById('lanebtc-amount').textContent = '0.00000';
+                document.getElementById('quotes-list').innerHTML = '<div style="text-align: center; color: #9ca3af; padding: 40px;">Enter an amount to see quotes</div>';
                 return;
             }
+
+            if (btcAmount < 0.0001) {
+                document.getElementById('lanebtc-amount').textContent = '0.00000';
+                document.getElementById('quotes-list').innerHTML = '<div style="text-align: center; color: #ef4444; padding: 40px;">Minimum swap: 0.0001 BTC</div>';
+                return;
+            }
+
+            // LaneLayer solver quote
+            const quotes = [
+                {
+                    id: 1,
+                    solver: 'LaneLayer',
+                    rate: 1.0,
+                    fee: 0.0001,
+                    receives: (btcAmount - 0.0001).toFixed(5),
+                    timelock: 144,
+                    speed: 'Standard',
+                    reputation: 100,
+                },
+            ];
+
+            // Update best rate display (cheapest fee)
+            const bestQuote = quotes.reduce((best, q) => q.fee < best.fee ? q : best, quotes[0]);
+            document.getElementById('lanebtc-amount').textContent = bestQuote.receives;
+
+            // Display quotes
+            const quotesList = document.getElementById('quotes-list');
+            quotesList.innerHTML = quotes.map(q => `
+                <div class="offer-card" style="cursor: pointer; transition: all 0.2s;" 
+                     onclick="acceptQuote(${q.id})"
+                     onmouseover="this.style.transform='scale(1.02)'"
+                     onmouseout="this.style.transform='scale(1)'">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                        <div>
+                            <h3 style="margin: 0;">${q.solver}</h3>
+                            <div style="display: flex; gap: 8px; margin-top: 4px;">
+                                <span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">
+                                    ${q.speed}
+                                </span>
+                                <span style="background: #f59e0b; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">
+                                    ${q.reputation}% Rep
+                                </span>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 24px; font-weight: 700; color: #1e40af;">${q.receives}</div>
+                            <div style="font-size: 12px; color: #6b7280;">LaneBTC</div>
+                        </div>
+                    </div>
+                    <div class="offer-details">
+                        <div style="display: flex; justify-content: space-between; margin: 6px 0;">
+                            <span>Fee:</span>
+                            <strong>${q.fee} BTC</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin: 6px 0;">
+                            <span>Refund Timelock:</span>
+                            <strong>${q.timelock} blocks (~${Math.floor(q.timelock / 144)} day)</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin: 6px 0;">
+                            <span>Destination:</span>
+                            <strong>LaneLayer Core Layer</strong>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Store quotes in state
+            state.quotes = quotes;
+            state.swapAmount = btcAmount;
             
-            state.intent = intent;
+            // Generate intent hash from swap parameters
+            const intent = `swap:${btcAmount}:BTC->LaneBTC`;
+            sha256(intent).then(fullHash => {
+                state.intentHash = fullHash.substring(0, 40); // First 20 bytes
+                state.intent = intent;
+            });
             
-            // Hash the intent and take first 20 bytes (40 hex chars)
-            const fullHash = await sha256(intent);
-            state.intentHash = fullHash.substring(0, 40); // First 20 bytes
-            
-            document.getElementById('intent-hash').textContent = state.intentHash;
-            document.getElementById('step-intent').classList.add('hidden');
-            document.getElementById('step-offer').classList.remove('hidden');
-            
-            console.log('Intent hashed:', state.intentHash);
+            console.log('📊 Updated', quotes.length, 'quotes for', btcAmount, 'BTC');
         };
 
-        window.acceptOffer = function() {
+        window.acceptQuote = async function(quoteId) {
+            const quote = state.quotes.find(q => q.id === quoteId);
+            if (!quote) return;
+
+            console.log('✅ Accepted quote from', quote.solver);
+            state.selectedQuote = quote;
+            state.swapAmount = parseFloat(document.getElementById('btc-amount').value);
+            
+            // Generate intent hash if not already done
+            if (!state.intentHash) {
+                const intent = `swap:${state.swapAmount}:BTC->LaneBTC`;
+                const fullHash = await sha256(intent);
+                state.intentHash = fullHash.substring(0, 40);
+                state.intent = intent;
+            }
             console.log('Generating keys and address...');
             
             // Generate ephemeral keypairs
@@ -565,19 +729,25 @@
             state.addressInfo = wasm.createRefundAddress(
                 userSkHex,
                 solverSkHex,
-                CSV_BLOCKS,
+                quote.timelock,
                 'regtest'
             );
             
-            // Create Bitcoin URI
-            const btcAmount = (ESCROW_AMOUNT / 100000000).toFixed(8); // Convert sats to BTC
-            const bitcoinUri = `bitcoin:${state.addressInfo.address}?amount=${btcAmount}`;
+            // Calculate amounts
+            const escrowAmountBtc = state.swapAmount;
+            const escrowAmountSats = Math.floor(escrowAmountBtc * 100000000);
+            state.escrowAmountSats = escrowAmountSats; // Store for later use
             
-            // Display address
+            // Create Bitcoin URI
+            const bitcoinUri = `bitcoin:${state.addressInfo.address}?amount=${escrowAmountBtc.toFixed(8)}`;
+            
+            // Display address and solver info
             document.getElementById('escrow-address').textContent = state.addressInfo.address;
-            document.getElementById('send-amount').textContent = ESCROW_AMOUNT.toLocaleString() + ' sats';
+            document.getElementById('send-amount').textContent = escrowAmountBtc.toFixed(5) + ' BTC';
+            document.getElementById('solver-name').textContent = quote.solver;
+            document.getElementById('lanebtc-receive').textContent = quote.receives;
             document.getElementById('cli-command').textContent = 
-                `bitcoin-cli -regtest sendtoaddress ${state.addressInfo.address} 0.0005`;
+                `bitcoin-cli -regtest sendtoaddress ${state.addressInfo.address} ${escrowAmountBtc.toFixed(5)}`;
             
             // Set up Bitcoin URI link
             const uriLink = document.getElementById('bitcoin-uri-link');
@@ -595,29 +765,38 @@
                 correctLevel: QRCode.CorrectLevel.M
             });
             
-            document.getElementById('step-offer').classList.add('hidden');
+            document.getElementById('step-swap').classList.add('hidden');
             document.getElementById('step-address').classList.remove('hidden');
             
             console.log('✅ Escrow address created:', state.addressInfo.address);
             console.log('📱 Bitcoin URI:', bitcoinUri);
+            console.log('🔒 Escrow amount:', escrowAmountBtc, 'BTC (', escrowAmountSats, 'sats)');
+            console.log('⏱️ CSV timelock:', quote.timelock, 'blocks');
+            
+            // Auto-detect deposit after 10 seconds (simulated)
+            setTimeout(() => {
+                autoDetectDeposit();
+            }, 10000);
         };
 
-        window.confirmFunding = async function() {
-            const txid = document.getElementById('funding-txid').value.trim();
-            const vout = parseInt(document.getElementById('funding-vout').value);
+        function autoDetectDeposit() {
+            // Simulate detecting the deposit on-chain
+            const txid = '2a21b7bac314996ad3f563a80887d73d4569e40d7f7d50e8ac0a07a7393e726a';
+            const vout = 1;
             
-            if (txid.length !== 64 || !/^[0-9a-fA-F]{64}$/.test(txid)) {
-                alert('Invalid TXID (must be 64 hex characters)');
-                return;
-            }
-            
-            if (isNaN(vout) || vout < 0) {
-                alert('Invalid vout');
-                return;
-            }
+            console.log('💰 Deposit detected!');
+            console.log('   TXID:', txid);
+            console.log('   Vout:', vout);
             
             state.fundingTxid = txid;
             state.fundingVout = vout;
+            
+            confirmFunding();
+        }
+
+        async function confirmFunding() {
+            const txid = state.fundingTxid;
+            const vout = state.fundingVout;
             
             // Show loading screen
             document.getElementById('step-address').classList.add('hidden');
@@ -629,12 +808,44 @@
             // Simulate multi-step process with delays
             await simulateLoadingSteps();
             
-            // Hide loading, show actions
+            // Hide loading, show waiting for solver
             document.getElementById('step-loading').classList.add('hidden');
-            document.getElementById('step-actions').classList.remove('hidden');
+            document.getElementById('step-waiting').classList.remove('hidden');
             
-            // Start refund countdown (mock)
+            console.log('⏳ Waiting for solver to fulfill intent...');
+            
+            // Simulate solver fulfilling the swap after 8 seconds
+            setTimeout(() => {
+                solverFulfilled();
+            }, 8000);
+        }
+
+        function solverFulfilled() {
+            console.log('✅ Solver fulfilled! LaneBTC delivered to LaneLayer account');
+            
+            const receivedAmount = state.selectedQuote?.receives || '0.00000';
+            document.getElementById('delivered-amount').textContent = receivedAmount + ' LaneBTC';
+            document.getElementById('delivered-amount-2').textContent = receivedAmount + ' LaneBTC';
+            
+            // Show delivery confirmation
+            document.getElementById('step-waiting').classList.add('hidden');
+            document.getElementById('step-delivery').classList.remove('hidden');
+        }
+
+        window.completeDelivery = function() {
+            console.log('🤝 User confirmed delivery, proceeding to cooperative payout');
+            cooperativePayout();
+        };
+
+        window.showDispute = function() {
+            console.log('⚠️ User disputed delivery');
+            
+            // Start refund countdown
             updateRefundCountdown();
+            
+            // Show advanced actions (burn/refund options)
+            document.getElementById('step-delivery').classList.add('hidden');
+            document.getElementById('step-actions').classList.remove('hidden');
         };
 
         async function simulateLoadingSteps() {
@@ -656,7 +867,8 @@
 
         function updateRefundCountdown() {
             // Mock countdown - in production, check actual block height
-            document.getElementById('refund-countdown').textContent = `${CSV_BLOCKS} blocks`;
+            const timelock = state.selectedQuote?.timelock || 144;
+            document.getElementById('refund-countdown').textContent = `${timelock} blocks`;
             document.getElementById('btn-refund').disabled = true;
             document.getElementById('btn-refund').textContent = 'Locked (timelock not expired)';
         }
@@ -666,12 +878,13 @@
                 console.log('Building burn transaction...');
                 
                 // Build BTI1 burn transaction
-                const burnAmount = BigInt(ESCROW_AMOUNT) - 500n; // Leave 500 sat fee for demo
+                const escrowSats = BigInt(state.escrowAmountSats);
+                const burnAmount = escrowSats - 500n; // Leave 500 sat fee for demo
                 
                 const unsignedPsbt = wasm.buildBurnPsbt(
                     state.fundingTxid,
                     state.fundingVout,
-                    BigInt(ESCROW_AMOUNT),
+                    escrowSats,
                     burnAmount,
                     CHAIN_ID,
                     state.intentHash,
@@ -689,7 +902,7 @@
                     solverSkHex,
                     unsignedPsbt.hex,
                     state.addressInfo.address,
-                    BigInt(ESCROW_AMOUNT),
+                    escrowSats,
                     state.addressInfo.merkle_root_hex || '',
                     state.addressInfo.internal_key || '',
                     state.addressInfo.output_key || ''
@@ -725,12 +938,13 @@
                 // For demo purposes, let's just show the process
                 
                 // Build payout PSBT
-                const payoutAmount = BigInt(ESCROW_AMOUNT) - 500n; // Leave 500 sat fee
+                const escrowSats = BigInt(state.escrowAmountSats);
+                const payoutAmount = escrowSats - 500n; // Leave 500 sat fee
                 
                 const unsignedPsbt = wasm.buildPayoutPsbt(
                     state.fundingTxid,
                     state.fundingVout,
-                    BigInt(ESCROW_AMOUNT),
+                    escrowSats,
                     state.addressInfo.address, // Placeholder - should be solver's address
                     payoutAmount
                 );
@@ -746,7 +960,7 @@
                     solverSkHex,
                     unsignedPsbt.hex,
                     state.addressInfo.address,
-                    BigInt(ESCROW_AMOUNT),
+                    escrowSats,
                     state.addressInfo.merkle_root_hex || '',
                     state.addressInfo.internal_key || '',
                     state.addressInfo.output_key || ''
@@ -787,6 +1001,9 @@
 
         // Initialize
         loadWasm();
+        
+        // Load initial quotes
+        updateQuotes();
     </script>
 </body>
 </html>
