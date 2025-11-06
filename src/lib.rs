@@ -6,34 +6,20 @@
 use wasm_bindgen::prelude::*;
 
 pub mod crypto;
-pub mod musig;
 pub mod refund_leaf;
 pub mod sighash;
-pub mod solver_stub;
 pub mod tx_build;
 pub mod types;
-
-// Keep tx.rs for backwards compatibility (will be deprecated)
-#[path = "tx.rs"]
-pub mod tx_legacy;
-
-#[cfg(any(test, feature = "demo"))]
-pub mod demo;
 
 #[cfg(target_arch = "wasm32")]
 pub mod wasm_bindings;
 
 // Re-export key types
 pub use crypto::*;
-pub use musig::*;
 pub use refund_leaf::*;
 pub use sighash::*;
-pub use solver_stub::*;
 pub use tx_build::*;
 pub use types::*;
-
-// Re-export legacy tx module for backwards compatibility
-pub use tx_legacy as tx;
 
 #[wasm_bindgen]
 pub fn init() {
@@ -43,7 +29,7 @@ pub fn init() {
 
 #[wasm_bindgen]
 pub struct MuSig2Helper {
-    secp: secp256k1::Secp256k1<secp256k1::All>,
+    _secp: secp256k1::Secp256k1<secp256k1::All>,
 }
 
 #[wasm_bindgen]
@@ -51,7 +37,7 @@ impl MuSig2Helper {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         Self {
-            secp: secp256k1::Secp256k1::new(),
+            _secp: secp256k1::Secp256k1::new(),
         }
     }
 

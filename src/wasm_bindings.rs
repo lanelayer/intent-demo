@@ -349,7 +349,6 @@ pub fn wasm_compute_sighash(
     prevout_script_hex: &str,
     sighash_type: &str,
 ) -> Result<String, JsValue> {
-    use bitcoin::psbt::Psbt;
     use bitcoin::consensus::encode::deserialize;
     use bitcoin::sighash::{Prevouts, SighashCache, TapSighashType};
 
@@ -447,9 +446,6 @@ pub fn wasm_sign_burn_psbt_demo(
     use bitcoin::consensus::encode::deserialize;
     use secp256k1::{Keypair, SecretKey};
     use secp256k1::musig::{AggregatedNonce, Session, SessionSecretRand};
-    use crate::tx_build::attach_keyspend_sig;
-    
-    let secp = Secp256k1::new();
     
     // Parse secret keys
     let user_sk_bytes = hex::decode(user_secret_hex)
@@ -761,8 +757,6 @@ pub fn wasm_sign_payout_psbt_demo(
     use bitcoin::consensus::encode::deserialize;
     use secp256k1::{Keypair, SecretKey};
     use secp256k1::musig::{AggregatedNonce, Session, SessionSecretRand};
-    
-    let secp = Secp256k1::new();
     
     web_sys::console::log_1(&JsValue::from_str("🤝 Starting cooperative payout signing..."));
     
