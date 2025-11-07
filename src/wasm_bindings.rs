@@ -17,6 +17,87 @@ pub fn get_wasm_version() -> String {
     format!("Built: {}", BUILD_TIMESTAMP)
 }
 
+/// Generate a random keypair (32-byte secret key)
+#[wasm_bindgen(js_name = generateKeypair)]
+pub fn wasm_generate_keypair() -> Result<JsValue, JsValue> {
+    let mut rng = secp256k1::rand::rng();
+    let kp = Keypair::new(&mut rng);
+    let sk = kp.secret_key();
+    let sk_bytes = sk.to_secret_bytes();
+    
+    // Return as Uint8Array
+    Ok(serde_wasm_bindgen::to_value(&sk_bytes.to_vec())?)
+}
+
+/// Get public key from secret key (returns 33-byte compressed pubkey as hex)
+#[wasm_bindgen(js_name = getPublicKeyFromSecret)]
+pub fn wasm_get_public_key_from_secret(secret_hex: &str) -> Result<String, JsValue> {
+    let sk_bytes = hex::decode(secret_hex)
+        .map_err(|e| JsValue::from_str(&format!("Invalid secret hex: {}", e)))?;
+    
+    if sk_bytes.len() != 32 {
+        return Err(JsValue::from_str("Secret key must be 32 bytes"));
+    }
+    
+    let mut sk_arr = [0u8; 32];
+    sk_arr.copy_from_slice(&sk_bytes);
+    let sk = SecretKey::from_secret_bytes(sk_arr)
+        .map_err(|e| JsValue::from_str(&format!("Invalid secret key: {:?}", e)))?;
+    
+    let kp = Keypair::from_secret_key(&sk);
+    let pk = PublicKey::from_keypair(&kp);
+    
+    Ok(hex::encode(pk.serialize()))
+}
+
+/// Attach witness to transaction (for burn tx with ANYONECANPAY, signature is 65 bytes)
+#[wasm_bindgen(js_name = attachWitness)]
+pub fn wasm_attach_witness(
+    tx_hex: &str,
+    signature_hex: &str,
+    use_anyonecanpay: bool,
+) -> Result<String, JsValue> {
+    use bitcoin::consensus::{deserialize, serialize};
+    use bitcoin::Witness;
+    
+    // Parse transaction
+    let tx_bytes = hex::decode(tx_hex)
+        .map_err(|e| JsValue::from_str(&format!("Invalid tx hex: {}", e)))?;
+    let mut tx: bitcoin::Transaction = deserialize(&tx_bytes)
+        .map_err(|e| JsValue::from_str(&format!("Invalid transaction: {:?}", e)))?;
+    
+    // Parse signature (64 bytes)
+    let sig_bytes = hex::decode(signature_hex)
+        .map_err(|e| JsValue::from_str(&format!("Invalid signature hex: {}", e)))?;
+    
+    if sig_bytes.len() != 64 {
+        return Err(JsValue::from_str(&format!("Signature must be 64 bytes, got {}", sig_bytes.len())));
+    }
+    
+    // Build witness: signature + sighash byte (if ANYONECANPAY)
+    let witness_data = if use_anyonecanpay {
+        // Append 0x81 (SIGHASH_ALL | SIGHASH_ANYONECANPAY)
+        let mut sig_with_sighash = sig_bytes;
+        sig_with_sighash.push(0x81);
+        sig_with_sighash
+    } else {
+        // No sighash byte for SIGHASH_DEFAULT
+        sig_bytes
+    };
+    
+    // Attach witness to first input
+    if tx.input.is_empty() {
+        return Err(JsValue::from_str("Transaction has no inputs"));
+    }
+    
+    tx.input[0].witness = Witness::from_slice(&[&witness_data]);
+    
+    // Serialize final transaction
+    let final_tx_hex = hex::encode(serialize(&tx));
+    
+    Ok(final_tx_hex)
+}
+
 use crate::tx_build::{build_burn_psbt, build_payout_psbt, build_unilateral_refund_tx};
 use crate::crypto::{aggregate_pubkeys, build_tr_with_refund_leaf, refund_leaf_script};
 use bitcoin::{Amount, Network, OutPoint, ScriptBuf, Txid};

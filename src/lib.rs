@@ -14,6 +14,9 @@ pub mod types;
 #[cfg(target_arch = "wasm32")]
 pub mod wasm_bindings;
 
+#[cfg(target_arch = "wasm32")]
+pub mod musig2_wasm;
+
 // Re-export key types
 pub use crypto::*;
 pub use refund_leaf::*;

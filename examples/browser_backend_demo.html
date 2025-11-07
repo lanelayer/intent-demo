@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swap BTC → LaneBTC (Backend Solver)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .card h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-success { background: #10b981; }
+        .btn-success:hover { background: #059669; }
+        .btn-warning { background: #f59e0b; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-danger { background: #ef4444; }
+        .btn-danger:hover { background: #dc2626; }
+        
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+        .info-box {
+            background: #f3f4f6;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .info-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .info-value {
+            font-size: 14px;
+            color: #1f2937;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            background: white;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .offer-card {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+        }
+        .offer-details {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e5e7eb;
+        }
+        #qr-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-success { background: #d1fae5; color: #065f46; }
+        .status-error { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🌉 Swap BTC → LaneBTC</h1>
+            <p class="subtitle">Trustless Cross-Chain Swap with Backend Solver</p>
+            <p class="subtitle" style="margin-top: 8px; color: #667eea; font-weight: 600;">
+                Solver Backend: <span id="solver-status">🔴 Not Connected</span>
+            </p>
+        </div>
+
+        <!-- Step 1: Enter amount and view quotes -->
+        <div class="card" id="step-swap">
+            <h2>💰 Step 1: Enter Swap Amount</h2>
+            <label for="btc-amount">How much BTC do you want to swap?</label>
+            <input type="text" id="btc-amount" placeholder="0.001" oninput="updateQuotes()" />
+            
+            <div style="margin: 15px 0; text-align: center;">
+                <span style="font-size: 18px; color: #667eea;">↓</span><br>
+                <span style="font-size: 14px; color: #6b7280;">You will receive</span><br>
+                <span style="font-size: 32px; font-weight: 700; color: #1e40af;" id="lanebtc-amount">0.00000</span>
+                <span style="font-size: 16px; color: #6b7280;">LaneBTC</span>
+            </div>
+
+            <h3 style="margin: 20px 0 10px;">📊 Available Solver Quotes</h3>
+            <div id="quotes-list" style="margin-bottom: 15px;">
+                <div style="text-align: center; color: #9ca3af; padding: 40px;">Enter an amount to fetch quotes from backend</div>
+            </div>
+        </div>
+
+        <!-- Step 2: Send BTC to escrow address -->
+        <div class="card hidden" id="step-address">
+            <h2>📬 Step 2: Send BTC to Escrow Address</h2>
+            <p style="color: #666; margin-bottom: 15px;">
+                Send BTC to this address to begin the swap. The funds are secured by a 2-of-2 MuSig2 + CSV timelock.
+            </p>
+            
+            <div class="info-box">
+                <div class="info-label">Escrow Address (Taproot)</div>
+                <div class="info-value" id="escrow-address"></div>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-label">Amount to Send</div>
+                <div class="info-value" id="send-amount"></div>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-label">Solver</div>
+                <div class="info-value" id="solver-name"></div>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-label">You Will Receive</div>
+                <div class="info-value" id="lanebtc-receive"></div>
+            </div>
+
+            <div id="qr-container"></div>
+            
+            <a id="bitcoin-uri-link" href="#" target="_blank">
+                <button class="btn btn-success">📱 Open in Bitcoin Wallet</button>
+            </a>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: 8px;">
+                <strong style="color: #0369a1;">💻 Or use CLI:</strong><br>
+                <code style="background: white; padding: 8px; display: block; margin-top: 8px; border-radius: 4px; word-break: break-all;" id="cli-command"></code>
+            </div>
+            
+            <p style="text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px;">
+                ⏳ Waiting for deposit...
+            </p>
+        </div>
+
+        <!-- Step 3: Loading/Processing -->
+        <div class="card hidden" id="step-loading">
+            <h2>⚙️ Processing Swap...</h2>
+            <div class="loading-spinner"></div>
+            <p style="text-align: center; color: #6b7280;" id="loading-message">Collaborating with solver on burn transaction...</p>
+        </div>
+
+        <!-- Step 4: Waiting for solver to fulfill -->
+        <div class="card hidden" id="step-waiting">
+            <h2>⏳ Waiting for LaneBTC Delivery</h2>
+            <p style="color: #666; margin-bottom: 15px;">
+                The solver has seen your burn transaction and is processing your LaneBTC delivery...
+            </p>
+            <div class="loading-spinner"></div>
+            <p style="text-align: center; margin-top: 20px; color: #6b7280;">
+                This usually takes a few seconds...
+            </p>
+        </div>
+
+        <!-- Step 5: Delivery confirmation -->
+        <div class="card hidden" id="step-delivery">
+            <h2>✅ Solver Claims Delivery Complete</h2>
+            <p style="color: #10b981; font-weight: 600; text-align: center; font-size: 18px; margin: 20px 0;">
+                💰 Solver says: <span id="delivered-amount">0.00000 LaneBTC</span> delivered
+            </p>
+            
+            <p style="color: #666; margin-bottom: 15px;">
+                The solver claims your LaneBTC has been delivered to your account on the LaneLayer Core Layer.
+                Please verify and choose an action:
+            </p>
+            
+            <div class="info-box">
+                <div class="info-label">Claimed Delivery Amount</div>
+                <div class="info-value" id="delivered-amount-2">0.00000 LaneBTC</div>
+            </div>
+            
+            <div class="info-box" style="background: #fef3c7;">
+                <div class="info-label" style="color: #92400e;">⏱️ Insurance Active</div>
+                <div style="color: #92400e; font-size: 14px;">
+                    Burn transaction pre-signed and ready (not yet broadcast)<br>
+                    Refund available in: <strong id="delivery-refund-countdown">144 blocks (~1 day)</strong>
+                </div>
+            </div>
+            
+            <h3 style="margin: 20px 0 10px; color: #333;">Choose Action:</h3>
+            
+            <button class="btn btn-success" onclick="completeDelivery()">
+                ✅ Confirmed - Delivery Received<br>
+                <small style="font-size: 12px; opacity: 0.9;">Cooperatively close with solver (happy path)</small>
+            </button>
+            
+            <button class="btn btn-warning" style="margin-top: 10px;" onclick="showDispute()">
+                ⚠️ Dispute - LaneBTC NOT Received<br>
+                <small style="font-size: 12px; opacity: 0.9;">Broadcast pre-signed burn transaction</small>
+            </button>
+            
+            <button class="btn" style="margin-top: 10px; background: #6b7280;" onclick="showTimeoutOptions()">
+                ⏱️ Timeout / Advanced Options<br>
+                <small style="font-size: 12px; opacity: 0.9;">Wait for CSV refund or see other options</small>
+            </button>
+        </div>
+
+        <!-- Step 6: Advanced Actions (Timeout options) -->
+        <div class="card hidden" id="step-actions">
+            <h2>⏱️ Timeout / Advanced Options</h2>
+            <p style="color: #666; margin-bottom: 15px;">
+                You chose to wait or explore other options. You can broadcast the pre-signed burn transaction, 
+                try cooperative payout, or wait for CSV refund.
+            </p>
+            
+            <div class="info-box" style="background: #fef3c7;">
+                <div class="info-label" style="color: #92400e;">⏱️ Refund Available In</div>
+                <div class="info-value" style="color: #92400e; font-size: 18px; font-weight: 700;" id="refund-countdown">144 blocks (~1 day)</div>
+            </div>
+            
+            <div class="info-box" style="background: #e0f2fe;">
+                <div class="info-label" style="color: #075985;">🔥 Burn Transaction Status</div>
+                <div style="color: #075985; font-size: 14px;">
+                    Pre-signed and ready to broadcast (created during deposit phase)
+                </div>
+            </div>
+            
+            <button class="btn btn-warning" onclick="showDispute()">🔥 Show Pre-Signed Burn Transaction</button>
+            <button class="btn" style="margin-top: 10px; background: #10b981;" onclick="completeDelivery()">🤝 Try Cooperative Payout</button>
+            <button class="btn btn-danger" style="margin-top: 10px;" onclick="forceRefund()">💸 Force Refund (CSV)</button>
+            <button class="btn" style="margin-top: 10px; background: #6b7280;" onclick="document.getElementById('step-actions').classList.add('hidden'); document.getElementById('step-delivery').classList.remove('hidden');">← Back</button>
+        </div>
+
+        <!-- Burn TX Result -->
+        <div class="card hidden" id="burn-result">
+            <h2>🔥 Pre-Signed Burn Transaction</h2>
+            <p style="color: #666; margin-bottom: 15px;">
+                This transaction was pre-signed during deposit as insurance. It burns the UTXO and reveals your intent on-chain (signed with ANYONECANPAY).
+                <strong style="color: #dc2626;">Broadcast this if the solver fails to deliver.</strong>
+            </p>
+            
+            <div class="info-box">
+                <div class="info-label">Transaction Hex</div>
+                <div style="position: relative;">
+                    <div class="info-value" id="burn-hex" style="max-height: 150px; overflow-y: auto;"></div>
+                    <button onclick="copy('burn-hex')" 
+                            style="position: absolute; top: 8px; right: 8px; background: #667eea; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                        📋 Copy
+                    </button>
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-label">Details</div>
+                <div class="info-value">
+                    Format: BTI1 (Burn-to-Intent v1)<br>
+                    Intent Hash: <span id="burn-intent-hash"></span><br>
+                    Burn Amount: <span id="burn-amount"></span> sats<br>
+                    Destination: LaneLayer Core Layer
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: 8px;">
+                <strong style="color: #0369a1;">📡 Broadcast Command:</strong><br>
+                <code style="background: white; padding: 8px; display: block; margin-top: 8px; border-radius: 4px; word-break: break-all;" id="burn-broadcast"></code>
+            </div>
+            
+            <div style="margin-top: 15px; padding: 15px; background: #fef3c7; border-radius: 8px;">
+                <strong style="color: #92400e;">⚠️ Warning:</strong><br>
+                <span style="color: #92400e; font-size: 14px;">
+                    Only broadcast this if the solver failed to deliver your LaneBTC. 
+                    Broadcasting proves your intent on-chain but burns the funds.
+                </span>
+            </div>
+            
+            <button class="btn" style="margin-top: 15px; background: #6b7280;" onclick="document.getElementById('burn-result').classList.add('hidden'); document.getElementById('step-delivery').classList.remove('hidden');">← Back</button>
+        </div>
+
+        <!-- Payout TX Result -->
+        <div class="card hidden" id="payout-result">
+            <h2>🤝 Cooperative Payout Transaction Ready</h2>
+            <p style="color: #666; margin-bottom: 15px;">
+                This is the "happy path" - both parties collaborate to pay out to the solver
+            </p>
+            
+            <div class="info-box">
+                <div class="info-label">Transaction Hex</div>
+                <div style="position: relative;">
+                    <div class="info-value" id="payout-hex" style="max-height: 150px; overflow-y: auto;"></div>
+                    <button onclick="copy('payout-hex')" 
+                            style="position: absolute; top: 8px; right: 8px; background: #667eea; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                        📋 Copy
+                    </button>
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-label">Payout Amount</div>
+                <div class="info-value"><span id="payout-amount"></span> sats</div>
+            </div>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: 8px;">
+                <strong style="color: #0369a1;">📡 Broadcast Command:</strong><br>
+                <code style="background: white; padding: 8px; display: block; margin-top: 8px; border-radius: 4px; word-break: break-all;" id="payout-broadcast"></code>
+            </div>
+            
+            <button class="btn" style="margin-top: 15px; background: #6b7280;" onclick="document.getElementById('payout-result').classList.add('hidden'); document.getElementById('step-actions').classList.remove('hidden');">← Back to Options</button>
+        </div>
+
+        <!-- Refund TX Result -->
+        <div class="card hidden" id="refund-result">
+            <h2>💸 Unilateral Refund Transaction Ready</h2>
+            <p style="color: #666; margin-bottom: 15px;">
+                After the CSV timelock expires, you can broadcast this transaction to get your funds back
+            </p>
+            
+            <div class="info-box" style="background: #fef3c7;">
+                <div class="info-label" style="color: #92400e;">⚠️ Important</div>
+                <div style="color: #92400e; font-size: 14px;">
+                    This transaction can only be broadcast after the CSV delay (144 blocks) has passed.
+                    Broadcasting before will result in rejection.
+                </div>
+            </div>
+            
+            <button class="btn" style="margin-top: 15px; background: #6b7280;" onclick="document.getElementById('refund-result').classList.add('hidden'); document.getElementById('step-actions').classList.remove('hidden');">← Back to Options</button>
+        </div>
+    </div>
+
+    <script type="module">
+        const BACKEND_URL = 'http://127.0.0.1:3000';
+        const CHAIN_ID = 1; // Example: 1 for LaneLayer
+
+        // Import WASM module
+        import init, * as wasm from '../pkg/wasm_helper.js';
+
+        // State management
+        const state = {
+            wasm: null,
+            sessionId: null,
+            userKeys: null,
+            solverPubkey: null,
+            addressInfo: null,
+            fundingTxid: null,
+            fundingVout: null,
+            escrowAmountSats: 0,
+            intentHash: null,
+            intent: null,
+            swapAmount: 0,
+            selectedQuote: null,
+            signedBurnTx: null,      // Pre-signed burn transaction (insurance)
+            burnAmount: 0,            // Burn amount in sats
+        };
+
+        // Initialize WASM
+        async function initWasm() {
+            try {
+                await init();
+                state.wasm = wasm;
+                console.log('✅ WASM module loaded');
+                
+                // Test backend connection
+                const response = await fetch(`${BACKEND_URL}/`);
+                if (response.ok) {
+                    document.getElementById('solver-status').textContent = '🟢 Connected';
+                    document.getElementById('solver-status').style.color = '#10b981';
+                    console.log('✅ Backend connected');
+                } else {
+                    throw new Error('Backend not responding');
+                }
+            } catch (error) {
+                console.error('❌ Failed to initialize:', error);
+                document.getElementById('solver-status').textContent = '🔴 Failed';
+                alert('Failed to connect to solver backend. Make sure it\'s running on http://127.0.0.1:3000');
+            }
+        }
+
+        // SHA-256 hash (for intent hash)
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // Update quotes from backend
+        window.updateQuotes = async function() {
+            const btcAmount = parseFloat(document.getElementById('btc-amount').value) || 0;
+            
+            if (btcAmount <= 0) {
+                document.getElementById('lanebtc-amount').textContent = '0.00000';
+                document.getElementById('quotes-list').innerHTML = '<div style="text-align: center; color: #9ca3af; padding: 40px;">Enter an amount to fetch quotes</div>';
+                return;
+            }
+
+            if (btcAmount < 0.0001) {
+                document.getElementById('lanebtc-amount').textContent = '0.00000';
+                document.getElementById('quotes-list').innerHTML = '<div style="text-align: center; color: #ef4444; padding: 40px;">Minimum swap: 0.0001 BTC</div>';
+                return;
+            }
+
+            // Fetch quote from backend
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/quote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ btc_amount: btcAmount }),
+                });
+                
+                if (!response.ok) throw new Error('Failed to fetch quote');
+                
+                const quote = await response.json();
+                
+                // Store quote and generate intent hash
+                state.swapAmount = btcAmount;
+                const intent = `swap:${btcAmount}:BTC->LaneBTC`;
+                const fullHash = await sha256(intent);
+                state.intentHash = fullHash.substring(0, 40); // First 20 bytes
+                state.intent = intent;
+                
+                // Update display
+                document.getElementById('lanebtc-amount').textContent = quote.receives.toFixed(5);
+                
+                // Display quote card
+                document.getElementById('quotes-list').innerHTML = `
+                    <div class="offer-card" style="cursor: pointer; transition: all 0.2s;" 
+                         onclick="acceptQuote()"
+                         onmouseover="this.style.transform='scale(1.02)'"
+                         onmouseout="this.style.transform='scale(1)'">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                            <div>
+                                <h3 style="margin: 0;">${quote.solver}</h3>
+                                <div style="display: flex; gap: 8px; margin-top: 4px;">
+                                    <span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">
+                                        Backend Solver
+                                    </span>
+                                    <span style="background: #f59e0b; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">
+                                        ${quote.reputation}% Rep
+                                    </span>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 24px; font-weight: 700; color: #1e40af;">${quote.receives.toFixed(5)}</div>
+                                <div style="font-size: 12px; color: #6b7280;">LaneBTC</div>
+                            </div>
+                        </div>
+                        <div class="offer-details">
+                            <div style="display: flex; justify-content: space-between; margin: 6px 0;">
+                                <span>Fee:</span>
+                                <strong>${quote.fee} BTC</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin: 6px 0;">
+                                <span>Refund Timelock:</span>
+                                <strong>${quote.timelock} blocks (~${Math.floor(quote.timelock / 144)} day)</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin: 6px 0;">
+                                <span>Destination:</span>
+                                <strong>LaneLayer Core Layer</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin: 6px 0;">
+                                <span>Solver Pubkey:</span>
+                                <strong style="font-size: 11px;">${quote.solver_pubkey.substring(0, 16)}...</strong>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                state.selectedQuote = quote;
+                console.log('📊 Got quote from backend:', quote);
+            } catch (error) {
+                console.error('❌ Failed to fetch quote:', error);
+                document.getElementById('quotes-list').innerHTML = '<div style="text-align: center; color: #ef4444; padding: 40px;">Failed to fetch quote from backend</div>';
+            }
+        };
+
+        // Accept quote and create escrow address
+        window.acceptQuote = async function() {
+            if (!state.selectedQuote) return;
+            
+            console.log('✅ Accepted quote from backend solver');
+            
+            try {
+                // Generate user keypair
+                const userSk = state.wasm.generateKeypair();
+                state.userKeys = { sk: userSk };
+                
+                const userSkHex = Array.from(userSk).map(b => b.toString(16).padStart(2, '0')).join('');
+                const userPk = state.wasm.getPublicKeyFromSecret(userSkHex);
+                
+                console.log('User pubkey:', userPk);
+                
+                // Initialize escrow with backend
+                const response = await fetch(`${BACKEND_URL}/api/escrow/init`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_pubkey: userPk,
+                        btc_amount: state.swapAmount,
+                        intent_hash: state.intentHash,
+                    }),
+                });
+                
+                if (!response.ok) throw new Error('Failed to initialize escrow');
+                
+                const escrowData = await response.json();
+                state.sessionId = escrowData.session_id;
+                state.solverPubkey = escrowData.solver_pubkey;
+                state.addressInfo = escrowData.address_info;
+                
+                console.log('✅ Escrow initialized, session:', state.sessionId);
+                console.log('Address:', state.addressInfo.address);
+                
+                // Calculate amounts
+                const escrowAmountBtc = state.swapAmount;
+                const escrowAmountSats = Math.floor(escrowAmountBtc * 100000000);
+                state.escrowAmountSats = escrowAmountSats;
+                
+                // Create Bitcoin URI
+                const bitcoinUri = `bitcoin:${state.addressInfo.address}?amount=${escrowAmountBtc.toFixed(8)}`;
+                
+                // Display address and solver info
+                document.getElementById('escrow-address').textContent = state.addressInfo.address;
+                document.getElementById('send-amount').textContent = escrowAmountBtc.toFixed(5) + ' BTC';
+                document.getElementById('solver-name').textContent = state.selectedQuote.solver;
+                document.getElementById('lanebtc-receive').textContent = state.selectedQuote.receives.toFixed(5);
+                document.getElementById('cli-command').textContent = 
+                    `bitcoin-cli -regtest sendtoaddress ${state.addressInfo.address} ${escrowAmountBtc.toFixed(5)}`;
+                
+                // Set up Bitcoin URI link
+                const uriLink = document.getElementById('bitcoin-uri-link');
+                uriLink.href = bitcoinUri;
+                
+                // Generate QR code
+                const qrContainer = document.getElementById('qr-container');
+                qrContainer.innerHTML = '';
+                new QRCode(qrContainer, {
+                    text: bitcoinUri,
+                    width: 256,
+                    height: 256,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+                
+                document.getElementById('step-swap').classList.add('hidden');
+                document.getElementById('step-address').classList.remove('hidden');
+                
+                console.log('✅ Ready to receive deposit');
+                
+                // Auto-detect deposit after 10 seconds (simulated)
+                setTimeout(() => {
+                    autoDetectDeposit();
+                }, 10000);
+            } catch (error) {
+                console.error('❌ Failed to accept quote:', error);
+                alert('Failed to create escrow: ' + error.message);
+            }
+        };
+
+        function autoDetectDeposit() {
+            // Simulate detecting the deposit on-chain
+            const txid = '2a21b7bac314996ad3f563a80887d73d4569e40d7f7d50e8ac0a07a7393e726a';
+            const vout = 1;
+            
+            console.log('💰 Deposit detected!');
+            console.log('   TXID:', txid);
+            console.log('   Vout:', vout);
+            
+            state.fundingTxid = txid;
+            state.fundingVout = vout;
+            
+            confirmFunding();
+        }
+
+        async function confirmFunding() {
+            console.log('✅ Funding confirmed');
+            
+            // Show loading screen
+            document.getElementById('step-address').classList.add('hidden');
+            document.getElementById('step-loading').classList.remove('hidden');
+            document.getElementById('loading-message').textContent = 'Collaborating with solver on burn transaction...';
+            
+            // Step 1: Pre-sign burn transaction with backend (but don't broadcast)
+            try {
+                const burnAmount = BigInt(state.escrowAmountSats) - 500n;
+                
+                console.log('🔥 Creating burn transaction (as insurance)...');
+                
+                // Build burn PSBT
+                const buildResponse = await fetch(`${BACKEND_URL}/api/burn/build`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: state.sessionId,
+                        funding_txid: state.fundingTxid,
+                        funding_vout: state.fundingVout,
+                        funding_value_sats: state.escrowAmountSats,
+                        burn_amount_sats: Number(burnAmount),
+                        chain_id: CHAIN_ID,
+                    }),
+                });
+                
+                if (!buildResponse.ok) throw new Error('Failed to build burn PSBT');
+                const buildData = await buildResponse.json();
+                
+                console.log('✅ Backend built burn PSBT');
+                
+                // Generate user nonce
+                const userSkHex = Array.from(state.userKeys.sk).map(b => b.toString(16).padStart(2, '0')).join('');
+                const nonceResult = state.wasm.generateNonce(
+                    userSkHex,
+                    state.solverPubkey,
+                    buildData.sighash_hex
+                );
+                
+                // Exchange nonce with backend (BURN endpoint)
+                const nonceResponse = await fetch(`${BACKEND_URL}/api/burn/nonce`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: state.sessionId,
+                        user_pub_nonce: nonceResult.pub_nonce,
+                        psbt_hex: buildData.psbt_hex,
+                        sighash_hex: buildData.sighash_hex,
+                    }),
+                });
+                
+                if (!nonceResponse.ok) throw new Error('Failed to exchange nonce');
+                const nonceData = await nonceResponse.json();
+                
+                // Create user partial signature
+                const partialSigResult = state.wasm.partialSign(
+                    userSkHex,
+                    state.solverPubkey,
+                    nonceResult.nonce_id,
+                    nonceData.solver_pub_nonce,
+                    buildData.sighash_hex,
+                    state.addressInfo.merkle_root_hex || ''
+                );
+                
+                // Get final signature from backend (BURN endpoint)
+                const signResponse = await fetch(`${BACKEND_URL}/api/burn/sign`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: state.sessionId,
+                        user_partial_sig: partialSigResult.partial_sig,
+                    }),
+                });
+                
+                if (!signResponse.ok) throw new Error('Failed to get final signature');
+                const signData = await signResponse.json();
+                
+                // Attach witness to create final signed burn tx
+                const finalBurnTx = state.wasm.attachWitness(
+                    buildData.psbt_hex,
+                    signData.final_sig,
+                    true  // ANYONECANPAY
+                );
+                
+                // Store the signed burn tx (but don't broadcast)
+                state.signedBurnTx = finalBurnTx;
+                state.burnAmount = Number(burnAmount);
+                
+                console.log('✅ Burn transaction pre-signed (stored, not broadcast)');
+                console.log('   This serves as proof of commitment and insurance');
+                
+            } catch (error) {
+                console.error('❌ Failed to create burn transaction:', error);
+                alert('Failed to create burn transaction: ' + error.message);
+                return;
+            }
+            
+            // Step 2: Wait for solver to fulfill
+            document.getElementById('loading-message').textContent = 'Waiting for solver to fulfill intent...';
+            
+            // Simulate solver fulfilling the swap after 3 seconds
+            setTimeout(() => {
+                solverFulfilled();
+            }, 3000);
+        }
+
+        function solverFulfilled() {
+            console.log('✅ Solver fulfilled! LaneBTC delivered');
+            
+            const receivedAmount = state.selectedQuote?.receives.toFixed(5) || '0.00000';
+            document.getElementById('delivered-amount').textContent = receivedAmount + ' LaneBTC';
+            document.getElementById('delivered-amount-2').textContent = receivedAmount + ' LaneBTC';
+            
+            document.getElementById('step-waiting').classList.add('hidden');
+            document.getElementById('step-delivery').classList.remove('hidden');
+        }
+
+        window.completeDelivery = async function() {
+            console.log('✅ User confirmed delivery, proceeding to cooperative payout');
+            
+            // Hide delivery screen, show loading
+            document.getElementById('step-delivery').classList.add('hidden');
+            document.getElementById('step-loading').classList.remove('hidden');
+            document.getElementById('loading-message').textContent = 'Creating cooperative payout transaction...';
+            
+            // Proceed to cooperative payout
+            await cooperativePayout();
+        };
+
+        window.showDispute = function() {
+            console.log('⚠️ User disputed delivery - showing pre-signed burn transaction');
+            
+            // Show the pre-signed burn transaction
+            document.getElementById('burn-hex').textContent = state.signedBurnTx;
+            document.getElementById('burn-intent-hash').textContent = state.intentHash;
+            document.getElementById('burn-amount').textContent = state.burnAmount.toLocaleString();
+            document.getElementById('burn-broadcast').textContent = 
+                `bitcoin-cli -regtest sendrawtransaction ${state.signedBurnTx}`;
+            
+            document.getElementById('step-delivery').classList.add('hidden');
+            document.getElementById('burn-result').classList.remove('hidden');
+        };
+
+        window.showTimeoutOptions = function() {
+            console.log('⏱️ User chose timeout/advanced options');
+            document.getElementById('step-delivery').classList.add('hidden');
+            document.getElementById('step-actions').classList.remove('hidden');
+        };
+
+        // Build and sign burn transaction with backend collaboration
+        window.showBurnTx = async function() {
+            try {
+                console.log('Building burn transaction with backend...');
+                
+                const burnAmount = BigInt(state.escrowAmountSats) - 500n;
+                
+                // Step 1: Ask backend to build the burn PSBT
+                const buildResponse = await fetch(`${BACKEND_URL}/api/burn/build`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: state.sessionId,
+                        funding_txid: state.fundingTxid,
+                        funding_vout: state.fundingVout,
+                        funding_value_sats: state.escrowAmountSats,
+                        burn_amount_sats: Number(burnAmount),
+                        chain_id: CHAIN_ID,
+                    }),
+                });
+                
+                if (!buildResponse.ok) throw new Error('Failed to build burn PSBT');
+                const buildData = await buildResponse.json();
+                
+                console.log('✅ Backend built burn PSBT');
+                console.log('Sighash:', buildData.sighash_hex);
+                
+                // Step 2: Generate user nonce
+                const userSkHex = Array.from(state.userKeys.sk).map(b => b.toString(16).padStart(2, '0')).join('');
+                const nonceResult = state.wasm.generateNonce(
+                    userSkHex,
+                    state.solverPubkey,
+                    buildData.sighash_hex
+                );
+                
+                console.log('✅ Generated user nonce');
+                
+                // Step 3: Exchange nonce with backend
+                const nonceResponse = await fetch(`${BACKEND_URL}/api/musig2/nonce`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: state.sessionId,
+                        user_pub_nonce: nonceResult.pub_nonce,
+                        psbt_hex: buildData.psbt_hex,
+                        sighash_hex: buildData.sighash_hex,
+                    }),
+                });
+                
+                if (!nonceResponse.ok) throw new Error('Failed to exchange nonce');
+                const nonceData = await nonceResponse.json();
+                
+                console.log('✅ Received solver nonce');
+                
+                // Step 4: Create user partial signature
+                const partialSigResult = state.wasm.partialSign(
+                    userSkHex,
+                    state.solverPubkey,
+                    nonceResult.nonce_id,
+                    nonceData.solver_pub_nonce,
+                    buildData.sighash_hex,
+                    state.addressInfo.merkle_root_hex || ''
+                );
+                
+                console.log('✅ Created user partial signature');
+                
+                // Step 5: Send partial signature to backend and get final signature
+                const signResponse = await fetch(`${BACKEND_URL}/api/musig2/sign`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: state.sessionId,
+                        user_partial_sig: partialSigResult.partial_sig,
+                    }),
+                });
+                
+                if (!signResponse.ok) throw new Error('Failed to get final signature');
+                const signData = await signResponse.json();
+                
+                console.log('✅ Got final signature from backend:', signData.final_sig.substring(0, 32) + '...');
+                
+                // Step 6: Attach the signature to the transaction
+                const finalTxHex = state.wasm.attachWitness(
+                    buildData.psbt_hex,
+                    signData.final_sig,
+                    true  // use ANYONECANPAY (adds 0x81 sighash byte)
+                );
+                
+                console.log('✅ Burn transaction fully signed with witness attached!');
+                console.log('Final TX hex length:', finalTxHex.length, 'chars =', finalTxHex.length / 2, 'bytes');
+                
+                // Display the signed transaction
+                document.getElementById('burn-hex').textContent = finalTxHex;
+                document.getElementById('burn-intent-hash').textContent = state.intentHash;
+                document.getElementById('burn-amount').textContent = Number(burnAmount).toLocaleString();
+                document.getElementById('burn-broadcast').textContent = 
+                    `bitcoin-cli -regtest sendrawtransaction ${finalTxHex}`;
+                
+                document.getElementById('step-actions').classList.add('hidden');
+                document.getElementById('burn-result').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('❌ Error building burn:', error);
+                alert('Error: ' + error.message);
+            }
+        };
+
+        // Build and sign payout transaction with backend collaboration
+        window.cooperativePayout = async function() {
+            try {
+                console.log('🤝 Starting cooperative payout...');
+                
+                const payoutAmount = BigInt(state.escrowAmountSats) - 500n;
+                // Use a valid regtest P2WPKH address for demo
+                const solverAddress = 'bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080';
+                
+                // Step 1: Ask backend to build the payout PSBT
+                const buildResponse = await fetch(`${BACKEND_URL}/api/payout/build`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: state.sessionId,
+                        funding_txid: state.fundingTxid,
+                        funding_vout: state.fundingVout,
+                        funding_value_sats: state.escrowAmountSats,
+                        payout_address: solverAddress,
+                        payout_amount_sats: Number(payoutAmount),
+                    }),
+                });
+                
+                if (!buildResponse.ok) throw new Error('Failed to build payout PSBT');
+                const buildData = await buildResponse.json();
+                
+                console.log('✅ Backend built payout PSBT');
+                
+                // Step 2: Generate user nonce
+                const userSkHex = Array.from(state.userKeys.sk).map(b => b.toString(16).padStart(2, '0')).join('');
+                const nonceResult = state.wasm.generateNonce(
+                    userSkHex,
+                    state.solverPubkey,
+                    buildData.sighash_hex
+                );
+                
+                // Step 3: Exchange nonce with backend (PAYOUT endpoint)
+                const nonceResponse = await fetch(`${BACKEND_URL}/api/payout/nonce`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: state.sessionId,
+                        user_pub_nonce: nonceResult.pub_nonce,
+                        psbt_hex: buildData.psbt_hex,
+                        sighash_hex: buildData.sighash_hex,
+                    }),
+                });
+                
+                if (!nonceResponse.ok) throw new Error('Failed to exchange nonce');
+                const nonceData = await nonceResponse.json();
+                
+                // Step 4: Create user partial signature
+                const partialSigResult = state.wasm.partialSign(
+                    userSkHex,
+                    state.solverPubkey,
+                    nonceResult.nonce_id,
+                    nonceData.solver_pub_nonce,
+                    buildData.sighash_hex,
+                    state.addressInfo.merkle_root_hex || ''
+                );
+                
+                // Step 5: Send partial signature to backend and get final signature (PAYOUT endpoint)
+                const signResponse = await fetch(`${BACKEND_URL}/api/payout/sign`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: state.sessionId,
+                        user_partial_sig: partialSigResult.partial_sig,
+                    }),
+                });
+                
+                if (!signResponse.ok) throw new Error('Failed to get final signature');
+                const signData = await signResponse.json();
+                
+                console.log('✅ Got final signature from backend');
+                
+                // Step 6: Attach the signature to the transaction
+                const finalTxHex = state.wasm.attachWitness(
+                    buildData.psbt_hex,
+                    signData.final_sig,
+                    false  // SIGHASH_DEFAULT (no sighash byte, 64 bytes total)
+                );
+                
+                console.log('✅ Payout transaction fully signed with witness attached!');
+                
+                document.getElementById('payout-hex').textContent = finalTxHex;
+                document.getElementById('payout-amount').textContent = Number(payoutAmount).toLocaleString();
+                document.getElementById('payout-broadcast').textContent = 
+                    `bitcoin-cli -regtest sendrawtransaction ${finalTxHex}`;
+                
+                document.getElementById('step-loading').classList.add('hidden');
+                document.getElementById('step-actions').classList.add('hidden');
+                document.getElementById('payout-result').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('❌ Error building payout:', error);
+                alert('Error: ' + error.message);
+            }
+        };
+
+        window.forceRefund = function() {
+            document.getElementById('step-actions').classList.add('hidden');
+            document.getElementById('refund-result').classList.remove('hidden');
+        };
+
+        window.copy = function(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const orig = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => { btn.textContent = orig; }, 2000);
+            }).catch(err => alert('Copy failed: ' + err));
+        };
+
+        // Initialize on page load
+        initWasm();
+    </script>
+</body>
+</html>
+
