@@ -85,7 +85,8 @@ pub struct SignRequest {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SignResponse {
-    final_sig: String,        // hex-encoded final signature (64 bytes)
+    final_sig: String,         // hex-encoded final signature (64 bytes)
+    signed_tx_hex: String,     // Full signed transaction with witness
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -130,6 +131,7 @@ struct NonceState {
     solver_pub_nonce: Option<PublicNonce>,
     user_pub_nonce: Option<PublicNonce>,
     sighash: Option<[u8; 32]>,
+    psbt_hex: Option<String>,  // Store unsigned tx for witness attachment
 }
 
 struct SessionData {
@@ -141,6 +143,8 @@ struct SessionData {
     key_agg_cache_untweaked: KeyAggCache,
     burn_nonce_state: Option<NonceState>,    // Separate state for burn tx
     payout_nonce_state: Option<NonceState>,  // Separate state for payout tx
+    signed_burn_tx: Option<String>,          // Store signed burn tx (backend's copy)
+    signed_payout_tx: Option<String>,        // Store signed payout tx (backend's copy)
 }
 
 #[derive(Clone)]
@@ -258,6 +262,8 @@ async fn init_escrow(
         key_agg_cache_untweaked: key_agg_cache,
         burn_nonce_state: None,
         payout_nonce_state: None,
+        signed_burn_tx: None,
+        signed_payout_tx: None,
     };
 
     state.sessions.lock().unwrap().insert(session_id.clone(), session_data);
@@ -362,6 +368,7 @@ async fn exchange_burn_nonce(
         solver_pub_nonce: Some(solver_pub_nonce),
         user_pub_nonce: Some(user_pub_nonce),
         sighash: Some(sighash),
+        psbt_hex: Some(req.psbt_hex.clone()),
     });
 
     Ok(Json(NonceResponse {
@@ -431,6 +438,7 @@ async fn exchange_payout_nonce(
         solver_pub_nonce: Some(solver_pub_nonce),
         user_pub_nonce: Some(user_pub_nonce),
         sighash: Some(sighash),
+        psbt_hex: Some(req.psbt_hex.clone()),
     });
 
     Ok(Json(NonceResponse {
@@ -480,6 +488,8 @@ async fn partial_sign_burn(
         .ok_or(StatusCode::BAD_REQUEST)?;
     let solver_sec_nonce = burn_state.solver_sec_nonce.take()
         .ok_or(StatusCode::BAD_REQUEST)?;
+    let psbt_hex = burn_state.psbt_hex.take()
+        .ok_or(StatusCode::BAD_REQUEST)?;
     
     let solver_kp = session.solver_kp.clone();
     
@@ -520,8 +530,27 @@ async fn partial_sign_burn(
 
     println!("✅ [BURN] Final signature created and verified");
 
+    // Attach witness to create final signed transaction
+    let tx_bytes = hex::decode(&psbt_hex)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let mut tx: bitcoin::Transaction = bitcoin::consensus::deserialize(&tx_bytes)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    
+    // Attach 65-byte witness (64-byte sig + 0x81 ANYONECANPAY)
+    let mut witness_data = sig_bytes.to_vec();
+    witness_data.push(0x81);
+    tx.input[0].witness = bitcoin::Witness::from_slice(&[&witness_data]);
+    
+    let signed_tx_hex = hex::encode(bitcoin::consensus::serialize(&tx));
+    
+    // Store in session (backend's copy)
+    session.signed_burn_tx = Some(signed_tx_hex.clone());
+    
+    println!("   Stored signed burn tx ({} bytes)", signed_tx_hex.len() / 2);
+
     Ok(Json(SignResponse {
         final_sig: hex::encode(sig_bytes),
+        signed_tx_hex,
     }))
 }
 
@@ -567,6 +596,8 @@ async fn partial_sign_payout(
         .ok_or(StatusCode::BAD_REQUEST)?;
     let solver_sec_nonce = payout_state.solver_sec_nonce.take()
         .ok_or(StatusCode::BAD_REQUEST)?;
+    let psbt_hex = payout_state.psbt_hex.take()
+        .ok_or(StatusCode::BAD_REQUEST)?;
     
     let solver_kp = session.solver_kp.clone();
     
@@ -607,8 +638,25 @@ async fn partial_sign_payout(
 
     println!("✅ [PAYOUT] Final signature created and verified");
 
+    // Attach witness to create final signed transaction
+    let tx_bytes = hex::decode(&psbt_hex)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let mut tx: bitcoin::Transaction = bitcoin::consensus::deserialize(&tx_bytes)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    
+    // Attach 64-byte witness (SIGHASH_DEFAULT, no sighash byte)
+    tx.input[0].witness = bitcoin::Witness::from_slice(&[&sig_bytes]);
+    
+    let signed_tx_hex = hex::encode(bitcoin::consensus::serialize(&tx));
+    
+    // Store in session (backend's copy)
+    session.signed_payout_tx = Some(signed_tx_hex.clone());
+    
+    println!("   Stored signed payout tx ({} bytes)", signed_tx_hex.len() / 2);
+
     Ok(Json(SignResponse {
         final_sig: hex::encode(sig_bytes),
+        signed_tx_hex,
     }))
 }
 
