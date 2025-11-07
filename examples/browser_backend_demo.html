@@ -8,8 +8,10 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'MS Sans Serif', 'Microsoft Sans Serif', sans-serif;
+            background: #3a6ea5; /* Windows 95 blue */
+            background-image: 
+                repeating-linear-gradient(45deg, rgba(255,255,255,.02) 0px, rgba(255,255,255,.02) 2px, transparent 2px, transparent 4px);
             min-height: 100vh;
             padding: 20px;
         }
@@ -17,110 +19,170 @@
             max-width: 800px;
             margin: 0 auto;
         }
-        .header {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-        h1 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-        .subtitle {
-            color: #666;
-            font-size: 14px;
-        }
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .card h2 {
-            color: #333;
+        .window {
+            background: #c0c0c0;
+            border: 2px solid;
+            border-color: #dfdfdf #404040 #404040 #dfdfdf;
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.4);
             margin-bottom: 15px;
         }
-        .btn {
-            background: #667eea;
+        .window-title {
+            background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
             color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
+            padding: 3px 5px;
+            font-weight: bold;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            letter-spacing: 0.5px;
+        }
+        .window-content {
+            padding: 15px;
+            background: #c0c0c0;
+        }
+        h1 {
+            color: #000080;
+            margin-bottom: 10px;
+            font-size: 24px;
+            text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+        }
+        h2 {
+            color: #000080;
+            margin-bottom: 12px;
             font-size: 16px;
-            font-weight: 600;
-            transition: all 0.3s;
+            text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+        }
+        h3 {
+            color: #000;
+            margin: 15px 0 8px;
+            font-size: 14px;
+        }
+        .subtitle {
+            color: #000;
+            font-size: 11px;
+        }
+        .btn {
+            background: #c0c0c0;
+            color: #000;
+            border: 2px solid;
+            border-color: #ffffff #000000 #000000 #ffffff;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: 'MS Sans Serif', sans-serif;
+            font-weight: bold;
             width: 100%;
+            text-align: center;
+            margin: 4px 0;
         }
         .btn:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            background: #d4d4d4;
+        }
+        .btn:active {
+            border-color: #000000 #ffffff #ffffff #000000;
+            padding: 9px 15px 7px 17px;
         }
         .btn:disabled {
-            background: #ccc;
+            color: #808080;
             cursor: not-allowed;
-            transform: none;
         }
-        .btn-success { background: #10b981; }
-        .btn-success:hover { background: #059669; }
-        .btn-warning { background: #f59e0b; }
-        .btn-warning:hover { background: #d97706; }
-        .btn-danger { background: #ef4444; }
-        .btn-danger:hover { background: #dc2626; }
+        .btn-success { 
+            background: linear-gradient(to bottom, #00dd00 0%, #00aa00 100%);
+            color: white;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+        }
+        .btn-success:hover { 
+            background: linear-gradient(to bottom, #00ff00 0%, #00cc00 100%);
+        }
+        .btn-warning { 
+            background: linear-gradient(to bottom, #ffdd00 0%, #ffaa00 100%);
+            color: #000;
+        }
+        .btn-warning:hover { 
+            background: linear-gradient(to bottom, #ffff00 0%, #ffcc00 100%);
+        }
+        .btn-danger { 
+            background: linear-gradient(to bottom, #dd0000 0%, #aa0000 100%);
+            color: white;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+        }
+        .btn-danger:hover { 
+            background: linear-gradient(to bottom, #ff0000 0%, #cc0000 100%);
+        }
         
         input[type="text"], textarea {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 14px;
-            font-family: inherit;
+            padding: 4px;
+            border: 2px solid;
+            border-color: #808080 #ffffff #ffffff #808080;
+            font-size: 11px;
+            font-family: 'MS Sans Serif', sans-serif;
+            background: white;
         }
         textarea {
             resize: vertical;
-            min-height: 80px;
+            min-height: 60px;
         }
         label {
             display: block;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #374151;
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #000;
+            font-size: 11px;
         }
-        .info-box {
-            background: #f3f4f6;
-            border-left: 4px solid #667eea;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 4px;
+        .panel {
+            background: #c0c0c0;
+            border: 2px solid;
+            border-color: #808080 #ffffff #ffffff #808080;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .panel-raised {
+            border-color: #ffffff #000000 #000000 #ffffff;
+        }
+        .panel-blue {
+            background: #d4d0c8;
+            border: 2px solid;
+            border-color: #0a246a #87ceeb #87ceeb #0a246a;
+        }
+        .panel-yellow {
+            background: #ffffcc;
+            border: 2px solid;
+            border-color: #808000 #ffff99 #ffff99 #808000;
         }
         .info-label {
-            font-size: 12px;
-            color: #6b7280;
-            margin-bottom: 4px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            font-size: 11px;
+            color: #000;
+            margin-bottom: 3px;
+            font-weight: bold;
         }
         .info-value {
-            font-size: 14px;
-            color: #1f2937;
+            font-size: 11px;
+            color: #000080;
             word-break: break-all;
             font-family: 'Courier New', monospace;
-            background: white;
-            padding: 8px;
-            border-radius: 4px;
+            background: #ffffff;
+            padding: 6px;
+            border: 2px solid;
+            border-color: #808080 #ffffff #ffffff #808080;
+        }
+        .amount-display {
+            background: #000;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            padding: 10px;
+            border: 2px solid;
+            border-color: #000000 #808080 #808080 #000000;
+            text-align: center;
+            font-weight: bold;
         }
         .hidden {
             display: none !important;
         }
         .loading-spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            border: 3px solid #c0c0c0;
+            border-top: 3px solid #000080;
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -132,289 +194,386 @@
             100% { transform: rotate(360deg); }
         }
         .offer-card {
-            background: #f9fafb;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 12px;
+            background: #c0c0c0;
+            border: 2px solid;
+            border-color: #ffffff #000000 #000000 #ffffff;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        .offer-card:active {
+            border-color: #000000 #ffffff #ffffff #000000;
         }
         .offer-details {
-            font-size: 13px;
-            color: #6b7280;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #e5e7eb;
+            font-size: 11px;
+            color: #000;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #808080;
         }
         #qr-container {
             text-align: center;
-            margin: 20px 0;
+            margin: 15px 0;
+            background: white;
+            padding: 10px;
+            border: 2px solid;
+            border-color: #808080 #ffffff #ffffff #808080;
         }
         .status-badge {
             display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-left: 8px;
+            padding: 2px 8px;
+            border: 1px solid #000;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 6px;
+            background: #c0c0c0;
         }
-        .status-pending { background: #fef3c7; color: #92400e; }
-        .status-success { background: #d1fae5; color: #065f46; }
-        .status-error { background: #fee2e2; color: #991b1b; }
+        .status-online {
+            background: linear-gradient(to bottom, #00dd00, #00aa00);
+            color: white;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+            border: 1px solid #008000;
+        }
+        .status-offline {
+            background: linear-gradient(to bottom, #dd0000, #aa0000);
+            color: white;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+            border: 1px solid #800000;
+        }
+        small {
+            font-size: 10px;
+            font-weight: normal;
+        }
+        code {
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            background: white;
+            padding: 6px;
+            display: block;
+            border: 2px solid;
+            border-color: #808080 #ffffff #ffffff #808080;
+            word-break: break-all;
+        }
+        .desktop-icon {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #c0c0c0;
+            border: 1px dotted transparent;
+            margin-right: 8px;
+        }
+        .splashscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeOut 0.5s ease-out 3s forwards;
+        }
+        .splashscreen-loading {
+            color: #00ffff;
+            font-family: 'MS Sans Serif', sans-serif;
+            font-size: 14px;
+            margin-top: 20px;
+            animation: blink 1s infinite;
+        }
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                visibility: hidden;
+            }
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
     </style>
 </head>
 <body>
+    <!-- Splashscreen -->
+    <div class="splashscreen" id="splashscreen">
+        <div style="text-align: center;">
+            <img src="../logo.png" alt="LaneLayer" style="max-width: 400px; max-height: 400px; image-rendering: crisp-edges;">
+        </div>
+        <div class="splashscreen-loading">⏳ Loading LaneLayer Swap...</div>
+    </div>
+
     <div class="container">
         <!-- Header -->
-        <div class="header">
-            <h1>🌉 Swap BTC → LaneBTC</h1>
-            <p class="subtitle">Trustless Cross-Chain Swap with Backend Solver</p>
-            <p class="subtitle" style="margin-top: 8px; color: #667eea; font-weight: 600;">
-                Solver Backend: <span id="solver-status">🔴 Not Connected</span>
-            </p>
+        <div class="window">
+            <div class="window-title">
+                <span>💾 LaneLayer Swap - [BTC to LaneBTC]</span>
+                <span>_□X</span>
+            </div>
+            <div class="window-content" style="text-align: center;">
+                <h1>🌉 Swap BTC → LaneBTC</h1>
+                <p class="subtitle">Trustless Cross-Chain Swap with Backend Solver</p>
+                <p class="subtitle" style="margin-top: 8px;">
+                    Solver Backend: <span id="solver-status" class="status-badge status-offline">OFFLINE</span>
+                </p>
+            </div>
         </div>
 
         <!-- Step 1: Enter amount and view quotes -->
-        <div class="card" id="step-swap">
-            <h2>💰 Step 1: Enter Swap Amount</h2>
-            <label for="btc-amount">How much BTC do you want to swap?</label>
-            <input type="text" id="btc-amount" placeholder="0.001" oninput="updateQuotes()" />
-            
-            <div style="margin: 15px 0; text-align: center;">
-                <span style="font-size: 18px; color: #667eea;">↓</span><br>
-                <span style="font-size: 14px; color: #6b7280;">You will receive</span><br>
-                <span style="font-size: 32px; font-weight: 700; color: #1e40af;" id="lanebtc-amount">0.00000</span>
-                <span style="font-size: 16px; color: #6b7280;">LaneBTC</span>
-            </div>
+        <div class="window" id="step-swap">
+            <div class="window-title">💰 Step 1: Enter Swap Amount</div>
+            <div class="window-content">
+                <label for="btc-amount">How much BTC do you want to swap?</label>
+                <input type="text" id="btc-amount" placeholder="0.001" oninput="updateQuotes()" />
+                
+                <div class="panel" style="margin: 15px 0; text-align: center;">
+                    <span style="font-size: 18px;">↓</span><br>
+                    <span style="font-size: 11px; margin-bottom: 5px; display: block;">You will receive</span>
+                    <div class="amount-display" style="margin: 5px auto; display: inline-block; font-size: 20px;">
+                        <span id="lanebtc-amount">0.00000</span> LaneBTC
+                    </div>
+                </div>
 
-            <h3 style="margin: 20px 0 10px;">📊 Available Solver Quotes</h3>
-            <div id="quotes-list" style="margin-bottom: 15px;">
-                <div style="text-align: center; color: #9ca3af; padding: 40px;">Enter an amount to fetch quotes from backend</div>
+                <h3>📊 Available Solver Quotes</h3>
+                <div id="quotes-list" style="margin-bottom: 10px;">
+                    <div style="text-align: center; color: #000; padding: 30px;">Enter an amount to fetch quotes from backend</div>
+                </div>
             </div>
         </div>
 
         <!-- Step 2: Send BTC to escrow address -->
-        <div class="card hidden" id="step-address">
-            <h2>📬 Step 2: Send BTC to Escrow Address</h2>
-            <p style="color: #666; margin-bottom: 15px;">
-                Send BTC to this address to begin the swap. The funds are secured by a 2-of-2 MuSig2 + CSV timelock.
-            </p>
-            
-            <div class="info-box">
-                <div class="info-label">Escrow Address (Taproot)</div>
-                <div class="info-value" id="escrow-address"></div>
-            </div>
-            
-            <div class="info-box">
-                <div class="info-label">Amount to Send</div>
-                <div class="info-value" id="send-amount"></div>
-            </div>
-            
-            <div class="info-box">
-                <div class="info-label">Solver</div>
-                <div class="info-value" id="solver-name"></div>
-            </div>
-            
-            <div class="info-box">
-                <div class="info-label">You Will Receive</div>
-                <div class="info-value" id="lanebtc-receive"></div>
-            </div>
+        <div class="window hidden" id="step-address">
+            <div class="window-title">📬 Step 2: Send BTC to Escrow Address</div>
+            <div class="window-content">
+                <p style="color: #000; margin-bottom: 12px; font-size: 11px;">
+                    Send BTC to this address to begin the swap. The funds are secured by a 2-of-2 MuSig2 + CSV timelock.
+                </p>
+                
+                <p style="text-align: center; margin: 15px 0; color: #000; font-size: 13px; font-weight: bold; background: #ffff00; padding: 8px; border: 2px solid #000;">
+                    ⏳ Waiting for deposit...
+                </p>
+                
+                <div class="panel">
+                    <div class="info-label">Escrow Address (Taproot)</div>
+                    <div class="info-value" id="escrow-address"></div>
+                </div>
+                
+                <div class="panel">
+                    <div class="info-label">Amount to Send</div>
+                    <div class="info-value" id="send-amount"></div>
+                </div>
+                
+                <div class="panel">
+                    <div class="info-label">Solver</div>
+                    <div class="info-value" id="solver-name"></div>
+                </div>
+                
+                <div class="panel">
+                    <div class="info-label">You Will Receive</div>
+                    <div class="info-value" id="lanebtc-receive"></div>
+                </div>
 
-            <div id="qr-container"></div>
-            
-            <a id="bitcoin-uri-link" href="#" target="_blank">
-                <button class="btn btn-success">📱 Open in Bitcoin Wallet</button>
-            </a>
-            
-            <div style="margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: 8px;">
-                <strong style="color: #0369a1;">💻 Or use CLI:</strong><br>
-                <code style="background: white; padding: 8px; display: block; margin-top: 8px; border-radius: 4px; word-break: break-all;" id="cli-command"></code>
+                <div id="qr-container"></div>
+                
+                <a id="bitcoin-uri-link" href="#" target="_blank">
+                    <button class="btn btn-success">📱 Open in Bitcoin Wallet</button>
+                </a>
+                
+                <div class="panel" style="margin-top: 15px;">
+                    <strong style="color: #000;">💻 Or use CLI:</strong><br>
+                    <code id="cli-command"></code>
+                </div>
             </div>
-            
-            <p style="text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px;">
-                ⏳ Waiting for deposit...
-            </p>
         </div>
 
         <!-- Step 3: Loading/Processing -->
-        <div class="card hidden" id="step-loading">
-            <h2>⚙️ Processing Swap...</h2>
-            <div class="loading-spinner"></div>
-            <p style="text-align: center; color: #6b7280;" id="loading-message">Collaborating with solver on burn transaction...</p>
+        <div class="window hidden" id="step-loading">
+            <div class="window-title">⚙️ Processing Swap...</div>
+            <div class="window-content">
+                <div class="loading-spinner"></div>
+                <p style="text-align: center; color: #000; font-size: 11px; font-weight: bold;" id="loading-message">Collaborating with solver on burn transaction...</p>
+            </div>
         </div>
 
         <!-- Step 4: Waiting for solver to fulfill -->
-        <div class="card hidden" id="step-waiting">
-            <h2>⏳ Waiting for LaneBTC Delivery</h2>
-            <p style="color: #666; margin-bottom: 15px;">
-                The solver has seen your burn transaction and is processing your LaneBTC delivery...
-            </p>
-            <div class="loading-spinner"></div>
-            <p style="text-align: center; margin-top: 20px; color: #6b7280;">
-                This usually takes a few seconds...
-            </p>
+        <div class="window hidden" id="step-waiting">
+            <div class="window-title">⏳ Waiting for LaneBTC Delivery</div>
+            <div class="window-content">
+                <p style="color: #000; margin-bottom: 12px; font-size: 11px;">
+                    The solver has seen your burn transaction and is processing your LaneBTC delivery...
+                </p>
+                <div class="loading-spinner"></div>
+                <p style="text-align: center; margin-top: 15px; color: #000; font-size: 11px;">
+                    This usually takes a few seconds...
+                </p>
+            </div>
         </div>
 
         <!-- Step 5: Delivery confirmation -->
-        <div class="card hidden" id="step-delivery">
-            <h2>✅ Solver Claims Delivery Complete</h2>
-            <p style="color: #10b981; font-weight: 600; text-align: center; font-size: 18px; margin: 20px 0;">
-                💰 Solver says: <span id="delivered-amount">0.00000 LaneBTC</span> delivered
-            </p>
-            
-            <p style="color: #666; margin-bottom: 15px;">
-                The solver claims your LaneBTC has been delivered to your account on the LaneLayer Core Layer.
-                Please verify and choose an action:
-            </p>
-            
-            <div class="info-box">
-                <div class="info-label">Claimed Delivery Amount</div>
-                <div class="info-value" id="delivered-amount-2">0.00000 LaneBTC</div>
-            </div>
-            
-            <div class="info-box" style="background: #fef3c7;">
-                <div class="info-label" style="color: #92400e;">⏱️ Insurance Active</div>
-                <div style="color: #92400e; font-size: 14px;">
-                    Burn transaction pre-signed and ready (not yet broadcast)<br>
-                    Refund available in: <strong id="delivery-refund-countdown">144 blocks (~1 day)</strong>
+        <div class="window hidden" id="step-delivery">
+            <div class="window-title">✅ Solver Claims Delivery Complete</div>
+            <div class="window-content">
+                <div class="amount-display" style="font-size: 16px; margin-bottom: 12px;">
+                    💰 <span id="delivered-amount">0.00000</span> LaneBTC delivered
                 </div>
+                
+                <p style="color: #000; margin-bottom: 12px; font-size: 11px;">
+                    The solver claims your LaneBTC has been delivered to your account on the LaneLayer Core Layer.
+                    Please verify and choose an action:
+                </p>
+                
+                <div class="panel">
+                    <div class="info-label">Claimed Delivery Amount</div>
+                    <div class="info-value" id="delivered-amount-2">0.00000 LaneBTC</div>
+                </div>
+                
+                <div class="panel-yellow">
+                    <div class="info-label">⏱️ Insurance Active</div>
+                    <div style="color: #000; font-size: 11px;">
+                        Burn transaction pre-signed and ready (not yet broadcast)<br>
+                        Refund available in: <strong id="delivery-refund-countdown">144 blocks (~1 day)</strong>
+                    </div>
+                </div>
+                
+                <h3 style="margin: 15px 0 8px; color: #000;">Choose Action:</h3>
+                
+                <button class="btn btn-success" onclick="completeDelivery()">
+                    ✅ Confirmed - Delivery Received<br>
+                    <small>Cooperatively close with solver (happy path)</small>
+                </button>
+                
+                <button class="btn btn-warning" onclick="showDispute()">
+                    ⚠️ Dispute - LaneBTC NOT Received<br>
+                    <small>Broadcast pre-signed burn transaction</small>
+                </button>
+                
+                <button class="btn" onclick="showTimeoutOptions()">
+                    ⏱️ Timeout / Advanced Options<br>
+                    <small>Wait for CSV refund or see other options</small>
+                </button>
             </div>
-            
-            <h3 style="margin: 20px 0 10px; color: #333;">Choose Action:</h3>
-            
-            <button class="btn btn-success" onclick="completeDelivery()">
-                ✅ Confirmed - Delivery Received<br>
-                <small style="font-size: 12px; opacity: 0.9;">Cooperatively close with solver (happy path)</small>
-            </button>
-            
-            <button class="btn btn-warning" style="margin-top: 10px;" onclick="showDispute()">
-                ⚠️ Dispute - LaneBTC NOT Received<br>
-                <small style="font-size: 12px; opacity: 0.9;">Broadcast pre-signed burn transaction</small>
-            </button>
-            
-            <button class="btn" style="margin-top: 10px; background: #6b7280;" onclick="showTimeoutOptions()">
-                ⏱️ Timeout / Advanced Options<br>
-                <small style="font-size: 12px; opacity: 0.9;">Wait for CSV refund or see other options</small>
-            </button>
         </div>
 
         <!-- Step 6: Advanced Actions (Timeout options) -->
-        <div class="card hidden" id="step-actions">
-            <h2>⏱️ Timeout / Advanced Options</h2>
-            <p style="color: #666; margin-bottom: 15px;">
-                You chose to wait or explore other options. You can broadcast the pre-signed burn transaction, 
-                try cooperative payout, or wait for CSV refund.
-            </p>
-            
-            <div class="info-box" style="background: #fef3c7;">
-                <div class="info-label" style="color: #92400e;">⏱️ Refund Available In</div>
-                <div class="info-value" style="color: #92400e; font-size: 18px; font-weight: 700;" id="refund-countdown">144 blocks (~1 day)</div>
-            </div>
-            
-            <div class="info-box" style="background: #e0f2fe;">
-                <div class="info-label" style="color: #075985;">🔥 Burn Transaction Status</div>
-                <div style="color: #075985; font-size: 14px;">
-                    Pre-signed and ready to broadcast (created during deposit phase)
+        <div class="window hidden" id="step-actions">
+            <div class="window-title">⏱️ Timeout / Advanced Options</div>
+            <div class="window-content">
+                <p style="color: #000; margin-bottom: 12px; font-size: 11px;">
+                    You chose to wait or explore other options. You can broadcast the pre-signed burn transaction, 
+                    try cooperative payout, or wait for CSV refund.
+                </p>
+                
+                <div class="panel-yellow">
+                    <div class="info-label">⏱️ Refund Available In</div>
+                    <div style="font-size: 14px; font-weight: 700; color: #000;" id="refund-countdown">144 blocks (~1 day)</div>
                 </div>
+                
+                <div class="panel-blue">
+                    <div class="info-label">🔥 Burn Transaction Status</div>
+                    <div style="color: #000; font-size: 11px;">
+                        Pre-signed and ready to broadcast (created during deposit phase)
+                    </div>
+                </div>
+                
+                <button class="btn btn-warning" onclick="showDispute()">🔥 Show Pre-Signed Burn Transaction</button>
+                <button class="btn btn-success" onclick="completeDelivery()">🤝 Try Cooperative Payout</button>
+                <button class="btn btn-danger" onclick="forceRefund()">💸 Force Refund (CSV)</button>
+                <button class="btn" onclick="document.getElementById('step-actions').classList.add('hidden'); document.getElementById('step-delivery').classList.remove('hidden');">← Back</button>
             </div>
-            
-            <button class="btn btn-warning" onclick="showDispute()">🔥 Show Pre-Signed Burn Transaction</button>
-            <button class="btn" style="margin-top: 10px; background: #10b981;" onclick="completeDelivery()">🤝 Try Cooperative Payout</button>
-            <button class="btn btn-danger" style="margin-top: 10px;" onclick="forceRefund()">💸 Force Refund (CSV)</button>
-            <button class="btn" style="margin-top: 10px; background: #6b7280;" onclick="document.getElementById('step-actions').classList.add('hidden'); document.getElementById('step-delivery').classList.remove('hidden');">← Back</button>
         </div>
 
         <!-- Burn TX Result -->
-        <div class="card hidden" id="burn-result">
-            <h2>🔥 Pre-Signed Burn Transaction</h2>
-            <p style="color: #666; margin-bottom: 15px;">
-                This transaction was pre-signed during deposit as insurance. It burns the UTXO and reveals your intent on-chain (signed with ANYONECANPAY).
-                <strong style="color: #dc2626;">Broadcast this if the solver fails to deliver.</strong>
-            </p>
-            
-            <div class="info-box">
-                <div class="info-label">Transaction Hex</div>
-                <div style="position: relative;">
-                    <div class="info-value" id="burn-hex" style="max-height: 150px; overflow-y: auto;"></div>
-                    <button onclick="copy('burn-hex')" 
-                            style="position: absolute; top: 8px; right: 8px; background: #667eea; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                        📋 Copy
+        <div class="window hidden" id="burn-result">
+            <div class="window-title">🔥 Pre-Signed Burn Transaction</div>
+            <div class="window-content">
+                <p style="color: #000; margin-bottom: 12px; font-size: 11px;">
+                    This transaction was pre-signed during deposit as insurance. It burns the UTXO and reveals your intent on-chain (signed with ANYONECANPAY).
+                    <strong style="color: #aa0000;">Broadcast this if the solver fails to deliver.</strong>
+                </p>
+                
+                <div class="panel">
+                    <div class="info-label">Transaction Hex</div>
+                    <div class="info-value" id="burn-hex" style="max-height: 120px; overflow-y: auto;"></div>
+                    <button onclick="copy('burn-hex', event)" class="btn" style="margin-top: 8px; width: auto; padding: 4px 12px;">
+                        📋 Copy Hex
                     </button>
                 </div>
-            </div>
-            
-            <div class="info-box">
-                <div class="info-label">Details</div>
-                <div class="info-value">
-                    Format: BTI1 (Burn-to-Intent v1)<br>
-                    Intent Hash: <span id="burn-intent-hash"></span><br>
-                    Burn Amount: <span id="burn-amount"></span> sats<br>
-                    Destination: LaneLayer Core Layer
+                
+                <div class="panel">
+                    <div class="info-label">Details</div>
+                    <div style="font-size: 11px; color: #000;">
+                        <strong>Format:</strong> BTI1 (Burn-to-Intent v1)<br>
+                        <strong>Intent Hash:</strong> <span id="burn-intent-hash"></span><br>
+                        <strong>Burn Amount:</strong> <span id="burn-amount"></span> sats<br>
+                        <strong>Destination:</strong> LaneLayer Core Layer
+                    </div>
                 </div>
+                
+                <div class="panel">
+                    <strong style="color: #000; font-size: 11px;">📡 Broadcast Command:</strong><br>
+                    <code id="burn-broadcast" style="margin-top: 5px;"></code>
+                </div>
+                
+                <div class="panel-yellow">
+                    <strong style="color: #000;">⚠️ Warning:</strong><br>
+                    <span style="color: #000; font-size: 11px;">
+                        Only broadcast this if the solver failed to deliver your LaneBTC. 
+                        Broadcasting proves your intent on-chain but burns the funds.
+                    </span>
+                </div>
+                
+                <button class="btn" onclick="document.getElementById('burn-result').classList.add('hidden'); document.getElementById('step-delivery').classList.remove('hidden');">← Back</button>
             </div>
-            
-            <div style="margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: 8px;">
-                <strong style="color: #0369a1;">📡 Broadcast Command:</strong><br>
-                <code style="background: white; padding: 8px; display: block; margin-top: 8px; border-radius: 4px; word-break: break-all;" id="burn-broadcast"></code>
-            </div>
-            
-            <div style="margin-top: 15px; padding: 15px; background: #fef3c7; border-radius: 8px;">
-                <strong style="color: #92400e;">⚠️ Warning:</strong><br>
-                <span style="color: #92400e; font-size: 14px;">
-                    Only broadcast this if the solver failed to deliver your LaneBTC. 
-                    Broadcasting proves your intent on-chain but burns the funds.
-                </span>
-            </div>
-            
-            <button class="btn" style="margin-top: 15px; background: #6b7280;" onclick="document.getElementById('burn-result').classList.add('hidden'); document.getElementById('step-delivery').classList.remove('hidden');">← Back</button>
         </div>
 
         <!-- Payout TX Result -->
-        <div class="card hidden" id="payout-result">
-            <h2>🤝 Cooperative Payout Transaction Ready</h2>
-            <p style="color: #666; margin-bottom: 15px;">
-                This is the "happy path" - both parties collaborate to pay out to the solver
-            </p>
-            
-            <div class="info-box">
-                <div class="info-label">Transaction Hex</div>
-                <div style="position: relative;">
-                    <div class="info-value" id="payout-hex" style="max-height: 150px; overflow-y: auto;"></div>
-                    <button onclick="copy('payout-hex')" 
-                            style="position: absolute; top: 8px; right: 8px; background: #667eea; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                        📋 Copy
+        <div class="window hidden" id="payout-result">
+            <div class="window-title">🤝 Cooperative Payout Transaction Ready</div>
+            <div class="window-content">
+                <p style="color: #000; margin-bottom: 12px; font-size: 11px;">
+                    This is the "happy path" - both parties collaborate to pay out to the solver
+                </p>
+                
+                <div class="panel">
+                    <div class="info-label">Transaction Hex</div>
+                    <div class="info-value" id="payout-hex" style="max-height: 120px; overflow-y: auto;"></div>
+                    <button onclick="copy('payout-hex', event)" class="btn" style="margin-top: 8px; width: auto; padding: 4px 12px;">
+                        📋 Copy Hex
                     </button>
                 </div>
+                
+                <div class="panel">
+                    <div class="info-label">Payout Amount</div>
+                    <div class="info-value"><span id="payout-amount"></span> sats</div>
+                </div>
+                
+                <div class="panel">
+                    <strong style="color: #000; font-size: 11px;">📡 Broadcast Command:</strong><br>
+                    <code id="payout-broadcast" style="margin-top: 5px;"></code>
+                </div>
+                
+                <button class="btn" onclick="document.getElementById('payout-result').classList.add('hidden'); document.getElementById('step-actions').classList.remove('hidden');">← Back to Options</button>
             </div>
-            
-            <div class="info-box">
-                <div class="info-label">Payout Amount</div>
-                <div class="info-value"><span id="payout-amount"></span> sats</div>
-            </div>
-            
-            <div style="margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: 8px;">
-                <strong style="color: #0369a1;">📡 Broadcast Command:</strong><br>
-                <code style="background: white; padding: 8px; display: block; margin-top: 8px; border-radius: 4px; word-break: break-all;" id="payout-broadcast"></code>
-            </div>
-            
-            <button class="btn" style="margin-top: 15px; background: #6b7280;" onclick="document.getElementById('payout-result').classList.add('hidden'); document.getElementById('step-actions').classList.remove('hidden');">← Back to Options</button>
         </div>
 
         <!-- Refund TX Result -->
-        <div class="card hidden" id="refund-result">
-            <h2>💸 Unilateral Refund Transaction Ready</h2>
-            <p style="color: #666; margin-bottom: 15px;">
-                After the CSV timelock expires, you can broadcast this transaction to get your funds back
-            </p>
-            
-            <div class="info-box" style="background: #fef3c7;">
-                <div class="info-label" style="color: #92400e;">⚠️ Important</div>
-                <div style="color: #92400e; font-size: 14px;">
-                    This transaction can only be broadcast after the CSV delay (144 blocks) has passed.
-                    Broadcasting before will result in rejection.
+        <div class="window hidden" id="refund-result">
+            <div class="window-title">💸 Unilateral Refund Transaction Ready</div>
+            <div class="window-content">
+                <p style="color: #000; margin-bottom: 12px; font-size: 11px;">
+                    After the CSV timelock expires, you can broadcast this transaction to get your funds back
+                </p>
+                
+                <div class="panel-yellow">
+                    <div class="info-label">⚠️ Important</div>
+                    <div style="color: #000; font-size: 11px;">
+                        This transaction can only be broadcast after the CSV delay (144 blocks) has passed.
+                        Broadcasting before will result in rejection.
+                    </div>
                 </div>
+                
+                <button class="btn" onclick="document.getElementById('refund-result').classList.add('hidden'); document.getElementById('step-actions').classList.remove('hidden');">← Back to Options</button>
             </div>
-            
-            <button class="btn" style="margin-top: 15px; background: #6b7280;" onclick="document.getElementById('refund-result').classList.add('hidden'); document.getElementById('step-actions').classList.remove('hidden');">← Back to Options</button>
         </div>
     </div>
 
@@ -453,15 +612,18 @@
                 // Test backend connection
                 const response = await fetch(`${BACKEND_URL}/`);
                 if (response.ok) {
-                    document.getElementById('solver-status').textContent = '🟢 Connected';
-                    document.getElementById('solver-status').style.color = '#10b981';
+                    const status = document.getElementById('solver-status');
+                    status.textContent = 'ONLINE';
+                    status.className = 'status-badge status-online';
                     console.log('✅ Backend connected');
                 } else {
                     throw new Error('Backend not responding');
                 }
             } catch (error) {
                 console.error('❌ Failed to initialize:', error);
-                document.getElementById('solver-status').textContent = '🔴 Failed';
+                const status = document.getElementById('solver-status');
+                status.textContent = 'FAILED';
+                status.className = 'status-badge status-offline';
                 alert('Failed to connect to solver backend. Make sure it\'s running on http://127.0.0.1:3000');
             }
         }
@@ -514,43 +676,27 @@
                 
                 // Display quote card
                 document.getElementById('quotes-list').innerHTML = `
-                    <div class="offer-card" style="cursor: pointer; transition: all 0.2s;" 
-                         onclick="acceptQuote()"
-                         onmouseover="this.style.transform='scale(1.02)'"
-                         onmouseout="this.style.transform='scale(1)'">
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                    <div class="offer-card" onclick="acceptQuote()">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
                             <div>
-                                <h3 style="margin: 0;">${quote.solver}</h3>
-                                <div style="display: flex; gap: 8px; margin-top: 4px;">
-                                    <span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">
-                                        Backend Solver
-                                    </span>
-                                    <span style="background: #f59e0b; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">
-                                        ${quote.reputation}% Rep
-                                    </span>
+                                <strong style="font-size: 14px; color: #000080;">${quote.solver}</strong>
+                                <div style="margin-top: 4px;">
+                                    <span class="status-badge status-online">Backend Solver</span>
+                                    <span class="status-badge" style="background: linear-gradient(to bottom, #ffdd00, #ffaa00); border: 1px solid #cc8800;">Rep: ${quote.reputation}%</span>
                                 </div>
                             </div>
                             <div style="text-align: right;">
-                                <div style="font-size: 24px; font-weight: 700; color: #1e40af;">${quote.receives.toFixed(5)}</div>
-                                <div style="font-size: 12px; color: #6b7280;">LaneBTC</div>
+                                <div class="amount-display" style="display: inline-block; padding: 5px 10px; margin-bottom: 2px;">
+                                    ${quote.receives.toFixed(5)} LaneBTC
+                                </div>
                             </div>
                         </div>
-                        <div class="offer-details">
-                            <div style="display: flex; justify-content: space-between; margin: 6px 0;">
-                                <span>Fee:</span>
-                                <strong>${quote.fee} BTC</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; margin: 6px 0;">
-                                <span>Refund Timelock:</span>
-                                <strong>${quote.timelock} blocks (~${Math.floor(quote.timelock / 144)} day)</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; margin: 6px 0;">
-                                <span>Destination:</span>
-                                <strong>LaneLayer Core Layer</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; margin: 6px 0;">
-                                <span>Solver Pubkey:</span>
-                                <strong style="font-size: 11px;">${quote.solver_pubkey.substring(0, 16)}...</strong>
+                        <div class="panel" style="margin-top: 10px; padding: 8px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px;">
+                                <div><strong>Fee:</strong> ${quote.fee} BTC</div>
+                                <div><strong>Timelock:</strong> ${quote.timelock} blocks</div>
+                                <div><strong>Destination:</strong> Core Layer</div>
+                                <div style="font-size: 9px;"><strong>Solver:</strong> ${quote.solver_pubkey.substring(0, 12)}...</div>
                             </div>
                         </div>
                     </div>
@@ -637,6 +783,7 @@
                 document.getElementById('step-address').classList.remove('hidden');
                 
                 console.log('✅ Ready to receive deposit');
+                console.log('⏳ Waiting for deposit...');
                 
                 // Auto-detect deposit after 10 seconds (simulated)
                 setTimeout(() => {
@@ -778,6 +925,7 @@
             document.getElementById('delivered-amount').textContent = receivedAmount + ' LaneBTC';
             document.getElementById('delivered-amount-2').textContent = receivedAmount + ' LaneBTC';
             
+            document.getElementById('step-loading').classList.add('hidden');
             document.getElementById('step-waiting').classList.add('hidden');
             document.getElementById('step-delivery').classList.remove('hidden');
         }
@@ -1026,14 +1174,17 @@
             document.getElementById('refund-result').classList.remove('hidden');
         };
 
-        window.copy = function(elementId) {
+        window.copy = function(elementId, event) {
             const text = document.getElementById(elementId).textContent;
             navigator.clipboard.writeText(text).then(() => {
                 const btn = event.target;
                 const orig = btn.textContent;
                 btn.textContent = '✅ Copied!';
                 setTimeout(() => { btn.textContent = orig; }, 2000);
-            }).catch(err => alert('Copy failed: ' + err));
+            }).catch(err => {
+                console.error('Copy failed:', err);
+                alert('Copy failed: ' + err);
+            });
         };
 
         // Initialize on page load
