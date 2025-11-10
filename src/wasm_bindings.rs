@@ -8,6 +8,7 @@
 use wasm_bindgen::prelude::*;
 use serde::{Deserialize, Serialize};
 use bitcoin::hashes::Hash;
+use ciborium::into_writer;
 
 const BUILD_TIMESTAMP: &str = env!("BUILD_TIMESTAMP");
 
@@ -1075,6 +1076,118 @@ pub fn wasm_sign_payout_psbt_demo(
     Ok(serde_wasm_bindgen::to_value(&info)?)
 }
 
+// ============================================================================
+// CBOR Intent Encoding
+// ============================================================================
+
+use alloy_primitives::U256;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[repr(u8)]
+enum IntentType {
+    AnchorBitcoinFill = 1,
+    RiscVProgram = 2,
+}
+
+#[derive(Serialize, Deserialize)]
+struct AnchorBitcoinFill {
+    bitcoin_address: Vec<u8>,
+    amount: U256,
+    max_fee: U256,
+    expire_by: u64,
+}
+
+#[derive(Serialize, Deserialize)]
+struct IntentData {
+    intent_type: IntentType,
+    data: Vec<u8>,
+}
+
+/// Encode exit intent data to CBOR format matching core-lane's format
+/// Returns hex-encoded CBOR bytes ready for the intent() function call
+#[wasm_bindgen(js_name = encodeExitIntent)]
+pub fn wasm_encode_exit_intent(
+    bitcoin_address: &str,
+    amount_sats: f64,
+    max_fee_sats: f64,
+    expire_by: f64,
+) -> Result<String, JsValue> {
+    // Convert JS numbers to u64
+    let amount = amount_sats as u64;
+    let max_fee = max_fee_sats as u64;
+    let expire = expire_by as u64;
+    // Step 1: Create AnchorBitcoinFill
+    let fill_data = AnchorBitcoinFill {
+        bitcoin_address: bitcoin_address.as_bytes().to_vec(),
+        amount: U256::from(amount),
+        max_fee: U256::from(max_fee),
+        expire_by: expire,
+    };
+
+    // Step 2: Encode AnchorBitcoinFill to CBOR
+    let mut fill_cbor = Vec::new();
+    into_writer(&fill_data, &mut fill_cbor)
+        .map_err(|e| JsValue::from_str(&format!("Failed to encode AnchorBitcoinFill: {}", e)))?;
+
+    // Step 3: Create IntentData
+    let intent_data = IntentData {
+        intent_type: IntentType::AnchorBitcoinFill,
+        data: fill_cbor,
+    };
+
+    // Step 4: Encode IntentData to CBOR
+    let mut intent_cbor = Vec::new();
+    into_writer(&intent_data, &mut intent_cbor)
+        .map_err(|e| JsValue::from_str(&format!("Failed to encode IntentData: {}", e)))?;
+
+    // Return as hex string
+    Ok(hex::encode(&intent_cbor))
+}
+
+/// Encode ABI calldata for intent(bytes intentData, uint256 nonce)
+/// Takes hex-encoded CBOR intent data and nonce, returns full calldata
+#[wasm_bindgen(js_name = encodeIntentCalldata)]
+pub fn wasm_encode_intent_calldata(
+    intent_cbor_hex: &str,
+    nonce: f64,
+) -> Result<String, JsValue> {
+    let nonce_val = nonce as u64;
+    // Function selector for intent(bytes,uint256)
+    let function_selector = "82c948dc";
+    
+    // Decode intent CBOR
+    let intent_bytes = hex::decode(intent_cbor_hex)
+        .map_err(|e| JsValue::from_str(&format!("Invalid intent hex: {}", e)))?;
+    
+    // ABI encoding for intent(bytes, uint256):
+    // [selector: 4 bytes]
+    // [offset to bytes: 32 bytes] = 0x40 (64 decimal)
+    // [nonce: 32 bytes]
+    // [length of bytes: 32 bytes]
+    // [bytes data: padded to 32-byte boundary]
+    
+    let offset_to_bytes = format!("{:064x}", 64); // Offset = 64
+    let nonce_hex = format!("{:064x}", nonce_val);
+    let data_length = format!("{:064x}", intent_bytes.len());
+    let data_hex = hex::encode(&intent_bytes);
+    
+    // Pad data to 32-byte boundary
+    let padding_needed = (32 - (intent_bytes.len() % 32)) % 32;
+    let data_padding = "0".repeat(padding_needed * 2);
+    
+    let calldata = format!(
+        "0x{}{}{}{}{}{}",
+        function_selector,
+        offset_to_bytes,
+        nonce_hex,
+        data_length,
+        data_hex,
+        data_padding
+    );
+    
+    Ok(calldata)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1095,6 +1208,14 @@ mod tests {
         
         let result = wasm_create_refund_address(&user_pk, &solver_pk, 144, "regtest");
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_encode_exit_intent() {
+        let result = wasm_encode_exit_intent("bcrt1qtest", 100000, 1000, 2000);
+        assert!(result.is_ok());
+        let hex = result.unwrap();
+        assert!(hex.len() > 0);
     }
 }
 

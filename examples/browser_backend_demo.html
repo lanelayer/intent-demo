@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Swap BTC → LaneBTC (Backend Solver)</title>
+    <title>Swap BTC ↔ LaneBTC (Backend Solver)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cbor-js@0.1.0/cbor.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -573,6 +574,112 @@
                 </div>
                 
                 <button class="btn" onclick="document.getElementById('refund-result').classList.add('hidden'); document.getElementById('step-actions').classList.remove('hidden');">← Back to Options</button>
+            </div>
+        </div>
+
+        <!-- ===================================================================== -->
+        <!-- LaneBTC → BTC Swap (Exit Intent)                                      -->
+        <!-- ===================================================================== -->
+        <div class="window">
+            <div class="window-title">
+                <span>🔄 LaneLayer Exit - [LaneBTC to BTC]</span>
+                <span>_□X</span>
+            </div>
+            <div class="window-content">
+                <h2>Swap LaneBTC → BTC</h2>
+                <p class="subtitle" style="margin-bottom: 15px;">Submit an exit intent to swap your LaneBTC back to Bitcoin</p>
+
+                <!-- MetaMask Connection -->
+                <div style="background: #fff; border: 2px inset #808080; padding: 12px; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <strong>🦊 MetaMask Status:</strong>
+                        <span id="metamask-status" style="color: #666;">Not connected</span>
+                    </div>
+                    <button id="connect-metamask-btn" class="btn btn-success" onclick="connectMetamask()">Connect MetaMask</button>
+                </div>
+
+                <!-- Exit Intent Form -->
+                <div id="exit-swap-form" class="hidden">
+                    <!-- Balance Display -->
+                    <div style="background: #fff; border: 2px inset #808080; padding: 12px; margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong>💰 Your LaneBTC Balance:</strong>
+                            <span id="lanebtc-balance" style="font-family: 'Courier New', monospace; color: #0066cc;">Loading...</span>
+                        </div>
+                    </div>
+
+                    <!-- Input Fields -->
+                    <div style="background: #fff; border: 2px inset #808080; padding: 12px; margin-bottom: 15px;">
+                        <h3>Exit Intent Parameters</h3>
+                        
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Bitcoin Address:</label>
+                            <input type="text" id="bitcoin-address" 
+                                   placeholder="bcrt1q..." 
+                                   style="width: 100%; padding: 6px; border: 2px inset #808080; font-family: 'Courier New', monospace;">
+                            <div style="font-size: 10px; color: #666; margin-top: 2px;">The Bitcoin address where you want to receive BTC</div>
+                        </div>
+
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Amount (sats):</label>
+                            <div style="display: flex; gap: 5px;">
+                                <input type="number" id="amount-sats" 
+                                       placeholder="100000" 
+                                       min="1"
+                                       style="flex: 1; padding: 6px; border: 2px inset #808080; font-family: 'Courier New', monospace;">
+                                <button class="btn" onclick="useMaxAmount()" style="width: auto; padding: 6px 12px;">Max</button>
+                            </div>
+                            <div style="font-size: 10px; color: #666; margin-top: 2px;">Amount of LaneBTC to swap (max: <span id="max-amount-sats">0</span> sats)</div>
+                        </div>
+
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Max Fee (sats):</label>
+                            <input type="number" id="max-fee-sats" 
+                                   value="1000" 
+                                   min="1"
+                                   style="width: 100%; padding: 6px; border: 2px inset #808080; font-family: 'Courier New', monospace;">
+                            <div style="font-size: 10px; color: #666; margin-top: 2px;">Maximum fee you're willing to pay to the filler</div>
+                        </div>
+
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Expire By (block):</label>
+                            <input type="number" id="expire-by" 
+                                   value="2000" 
+                                   min="1"
+                                   style="width: 100%; padding: 6px; border: 2px inset #808080; font-family: 'Courier New', monospace;">
+                            <div style="font-size: 10px; color: #666; margin-top: 2px;">Block number when this intent expires</div>
+                        </div>
+
+                        <button class="btn btn-success" onclick="submitExitIntent()">Submit Exit Intent</button>
+                    </div>
+
+                    <!-- Status -->
+                    <div style="background: #fff; border: 2px inset #808080; padding: 12px; margin-bottom: 15px;">
+                        <div style="font-size: 11px; color: #666;">
+                            <strong>Status:</strong> <span id="exit-status">Ready to submit</span>
+                        </div>
+                    </div>
+
+                    <!-- Result -->
+                    <div id="exit-result" class="hidden" style="background: #fff; border: 2px inset #808080; padding: 12px;">
+                        <h3 style="color: #00aa00; margin-bottom: 10px;">✅ Exit Intent Submitted!</h3>
+                        <div style="margin-bottom: 8px;">
+                            <strong>Transaction Hash:</strong>
+                            <div style="font-family: 'Courier New', monospace; font-size: 10px; word-break: break-all; background: #e0e0e0; padding: 6px; margin-top: 4px;">
+                                <span id="exit-tx-hash"></span>
+                            </div>
+                        </div>
+                        <div style="padding: 10px; background: #ffffcc; border: 1px solid #cccc00; margin-top: 10px;">
+                            <strong>⏳ What happens next:</strong>
+                            <ol style="margin: 8px 0 0 20px; padding: 0; font-size: 11px;">
+                                <li>The filler bot will detect your exit intent</li>
+                                <li>It will send BTC to your Bitcoin address</li>
+                                <li>Once confirmed, the intent will be solved</li>
+                                <li>Your laneBTC will be deducted from your balance</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1185,6 +1292,135 @@
                 console.error('Copy failed:', err);
                 alert('Copy failed: ' + err);
             });
+        };
+
+        // ========================================================================
+        // LaneBTC → BTC Swap (Exit Intent)
+        // ========================================================================
+
+        let metamaskAccount = null;
+        let provider = null;
+
+        window.connectMetamask = async function() {
+            try {
+                if (typeof window.ethereum === 'undefined') {
+                    alert('MetaMask is not installed! Please install MetaMask to continue.');
+                    return;
+                }
+
+                provider = window.ethereum;
+                const accounts = await provider.request({ method: 'eth_requestAccounts' });
+                metamaskAccount = accounts[0];
+
+                document.getElementById('metamask-status').textContent = `Connected: ${metamaskAccount.substring(0, 6)}...${metamaskAccount.substring(38)}`;
+                document.getElementById('connect-metamask-btn').style.display = 'none';
+                document.getElementById('exit-swap-form').classList.remove('hidden');
+
+                // Get laneBTC balance
+                await updateLaneBTCBalance();
+            } catch (error) {
+                console.error('MetaMask connection error:', error);
+                alert('Failed to connect to MetaMask: ' + error.message);
+            }
+        };
+
+        async function updateLaneBTCBalance() {
+            try {
+                const balance = await provider.request({
+                    method: 'eth_getBalance',
+                    params: [metamaskAccount, 'latest']
+                });
+
+                // Convert from wei to sats (1 sat = 10^10 wei)
+                const balanceWei = BigInt(balance);
+                const satsPerWei = BigInt(10000000000); // 10^10
+                const balanceSats = balanceWei / satsPerWei;
+
+                document.getElementById('lanebtc-balance').textContent = `${balanceSats.toLocaleString()} sats`;
+                document.getElementById('max-amount-sats').textContent = balanceSats.toString();
+            } catch (error) {
+                console.error('Error getting balance:', error);
+                document.getElementById('lanebtc-balance').textContent = 'Error loading balance';
+            }
+        }
+
+        window.submitExitIntent = async function() {
+            try {
+                const bitcoinAddress = document.getElementById('bitcoin-address').value.trim();
+                const amountSats = parseInt(document.getElementById('amount-sats').value);
+                const maxFeeSats = parseInt(document.getElementById('max-fee-sats').value) || 1000;
+                const expireBy = parseInt(document.getElementById('expire-by').value) || 2000;
+
+                if (!bitcoinAddress) {
+                    alert('Please enter a Bitcoin address');
+                    return;
+                }
+
+                if (!amountSats || amountSats <= 0) {
+                    alert('Please enter a valid amount');
+                    return;
+                }
+
+                document.getElementById('exit-status').textContent = 'Building exit intent...';
+
+                // Step 1: Encode exit intent to CBOR using WASM (matches core-lane format exactly)
+                const intentCborHex = state.wasm.encodeExitIntent(
+                    bitcoinAddress,
+                    amountSats,
+                    maxFeeSats,
+                    expireBy
+                );
+
+                console.log('Intent CBOR data (hex):', intentCborHex);
+
+                document.getElementById('exit-status').textContent = 'Encoding calldata...';
+
+                // Step 2: Encode as calldata for intent(bytes intentData, uint256 nonce)
+                const nonce = 0;
+                const calldata = state.wasm.encodeIntentCalldata(intentCborHex, nonce);
+
+                console.log('Calldata:', calldata);
+
+                document.getElementById('exit-status').textContent = 'Sending transaction to Core Lane...';
+
+                // Step 3: Calculate value to send (amount + max_fee in wei)
+                const totalSats = amountSats + maxFeeSats;
+                const totalWei = BigInt(totalSats) * BigInt(10000000000); // Convert sats to wei
+                const valueHex = '0x' + totalWei.toString(16);
+
+                // Step 4: Send transaction to 0x0000000000000000000000000000000000000045
+                const exitMarketplace = '0x0000000000000000000000000000000000000045';
+                
+                const txHash = await provider.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: metamaskAccount,
+                        to: exitMarketplace,
+                        data: calldata,
+                        value: valueHex,
+                        gas: '0x' + (500000).toString(16) // 500k gas limit
+                    }]
+                });
+
+                document.getElementById('exit-status').textContent = '✅ Exit intent submitted!';
+                document.getElementById('exit-tx-hash').textContent = txHash;
+                document.getElementById('exit-result').classList.remove('hidden');
+                
+                // Update balance after a moment
+                setTimeout(updateLaneBTCBalance, 2000);
+
+            } catch (error) {
+                console.error('Exit intent error:', error);
+                document.getElementById('exit-status').textContent = '❌ Error: ' + error.message;
+                alert('Error submitting exit intent: ' + error.message);
+            }
+        };
+
+        window.useMaxAmount = function() {
+            const maxAmount = document.getElementById('max-amount-sats').textContent;
+            const maxFee = parseInt(document.getElementById('max-fee-sats').value) || 1000;
+            // Subtract fee from max to ensure we don't go over balance
+            document.getElementById('amount-sats').value = Math.max(0, parseInt(maxAmount) - maxFee);
         };
 
         // Initialize on page load
