@@ -833,6 +833,10 @@
                 
                 console.log('User pubkey:', userPk);
                 
+                // Get user's Core Lane address for receiving laneBTC
+                // If MetaMask is connected, use that address, otherwise null
+                const userCoreLaneAddress = metamaskAccount || null;
+                
                 // Initialize escrow with backend
                 const response = await fetch(`${BACKEND_URL}/api/escrow/init`, {
                     method: 'POST',
@@ -841,6 +845,7 @@
                         user_pubkey: userPk,
                         btc_amount: state.swapAmount,
                         intent_hash: state.intentHash,
+                        user_address: userCoreLaneAddress,
                     }),
                 });
                 
