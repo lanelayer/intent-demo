@@ -828,11 +828,15 @@ async fn main() {
         .layer(CorsLayer::permissive())
         .with_state(solver_state);
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
+    let host = std::env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
+    let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
+    let bind_addr = format!("{}:{}", host, port);
+    
+    let listener = tokio::net::TcpListener::bind(&bind_addr)
         .await
-        .expect("Failed to bind to port 3000");
+        .expect(&format!("Failed to bind to {}", bind_addr));
 
-    println!("✅ Solver listening on http://127.0.0.1:3000");
+    println!("✅ Solver listening on http://{}", bind_addr);
     println!();
 
     axum::serve(listener, app)
